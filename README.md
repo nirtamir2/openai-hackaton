@@ -1,4 +1,4 @@
-# Full-Stack App Template
+# openai-hackaton
 
 Reusable infrastructure template for new products.
 
@@ -10,7 +10,6 @@ Reusable infrastructure template for new products.
 - oRPC with TanStack Query helpers
 - Tailwind CSS and reusable UI primitives
 - Paraglide i18n with English and Hebrew locales
-- Android Trusted Web Activity wrapper
 
 ## Create A New Project
 
@@ -69,6 +68,3 @@ Open [http://localhost:3001](http://localhost:3001).
   Better Auth uses for OAuth provider IDs and tokens.
 - The API exposes `healthCheck` and `privateData` examples in `packages/api`.
 - Legal and accessibility pages are placeholders and must be customized before launch.
-- Android files are configured as a neutral TWA shell. Update `apps/android/twa-manifest.json`,
-  `apps/android/app/build.gradle`, and `.well-known/assetlinks.json` for your production domain
-  and signing certificate.

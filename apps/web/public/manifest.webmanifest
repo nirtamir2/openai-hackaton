@@ -1,6 +1,6 @@
 {
-  "name": "App Template",
-  "short_name": "App Template",
+  "name": "openai-hackaton",
+  "short_name": "openai-hackaton",
   "id": "/",
   "description": "A reusable full-stack application template.",
   "display": "standalone",

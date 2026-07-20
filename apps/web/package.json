@@ -5,7 +5,7 @@
   "scripts": {
     "build": "pnpm --filter @app-template/db db:generate && pnpm paraglide:compile && vite build",
     "bare-dev": "vite dev",
-    "dev": "portless run --name fullstack-app-template vite dev",
+    "dev": "portless run --name openai-hackaton vite dev",
     "paraglide:compile": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide --strategy cookie preferredLanguage baseLocale --is-server 'import.meta.env.SSR' --emit-ts-declarations --no-emit-git-ignore --no-emit-prettier-ignore --no-emit-readme",
     "serve": "vite preview",
     "type-check": "pnpm paraglide:compile && tsgo --noEmit"
