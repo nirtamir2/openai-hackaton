@@ -1,0 +1,48 @@
+model Provider {
+  id               String             @id @default(uuid()) @db.Uuid
+  name             String             @unique
+  createdAt        DateTime           @default(now()) @map("created_at") @db.Timestamptz
+  posts            Post[]
+  ingestionSources IngestionSource[]
+
+  @@map("providers")
+}
+
+model Post {
+  id                String    @id @default(uuid()) @db.Uuid
+  providerId        String    @map("provider_id") @db.Uuid
+  externalId        String    @map("external_id")
+  author            String?
+  title             String?
+  content           String?
+  url               String?
+  parentExternalId  String?   @map("parent_external_id")
+  publishedAt       DateTime? @map("published_at") @db.Timestamptz
+  metadata          Json?     @db.JsonB
+  rawData           Json?     @map("raw_data") @db.JsonB
+  embedding         Unsupported("vector(1536)")?
+  embeddingModel    String?   @map("embedding_model")
+  embeddedAt        DateTime? @map("embedded_at") @db.Timestamptz
+  createdAt         DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt         DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  provider          Provider  @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@index([providerId])
+  @@index([providerId, externalId])
+  @@index([embeddedAt])
+  @@map("posts")
+}
+
+model IngestionSource {
+  id           String    @id @default(uuid()) @db.Uuid
+  providerId   String    @map("provider_id") @db.Uuid
+  sourceType   String    @map("source_type")
+  sourceValue  String    @map("source_value")
+  cursor       String?
+  lastSyncedAt DateTime? @map("last_synced_at") @db.Timestamptz
+  enabled      Boolean   @default(true)
+  provider     Provider  @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@index([providerId])
+  @@map("ingestion_sources")
+}
