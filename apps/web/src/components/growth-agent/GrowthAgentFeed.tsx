@@ -312,7 +312,21 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
   const isGeneratingIdeas =
     generateIdeasMutation.isPending || pendingIdeaGenerations.length > 0;
 
-  const isFeedBusy = isGeneratingTasks || isGeneratingIdeas;
+  function generateTodayTasks() {
+    setSelectedDay(growthAgentToday);
+    generateTasksMutation.mutate({
+      productId,
+      forToday: true,
+      taskCount: 3,
+      scope: "tasks",
+    });
+    generateIdeasMutation.mutate({
+      productId,
+      forToday: true,
+      taskCount: 3,
+      scope: "ideas",
+    });
+  }
   const taskGenerationEta = useGenerationEta({
     estimatedDurationMs: estimatedTaskGenerationDurationMs,
     isComplete: !isGeneratingTasks,
@@ -578,15 +592,8 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
           <SignalButton
             variant="secondary"
             size="sm"
-            disabled={isFeedBusy || isInitialLoad}
-            onClick={() => {
-              generateTasksMutation.mutate({
-                productId,
-                forToday: true,
-                taskCount: 3,
-                scope: "tasks",
-              });
-            }}
+            disabled={isGeneratingTasks || isInitialLoad}
+            onClick={generateTodayTasks}
           >
             <Sparkles className="size-[13px]" />
             {isGeneratingTasks
@@ -597,7 +604,7 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
             <SignalButton
               variant="tertiary"
               size="sm"
-              disabled={isFeedBusy}
+              disabled={isGeneratingTasks}
               onClick={() => {
                 setRemoveDayTasksDialogOpen(true);
               }}
@@ -643,7 +650,7 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
         <SignalButton
           variant="secondary"
           size="sm"
-          disabled={isFeedBusy || isInitialLoad}
+          disabled={isGeneratingIdeas || isInitialLoad}
           onClick={() => {
             generateIdeasMutation.mutate({
               productId,
