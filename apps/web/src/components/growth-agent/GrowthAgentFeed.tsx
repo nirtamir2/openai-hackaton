@@ -1,6 +1,6 @@
 import type { GrowthAgentFeedData } from "@app-template/api/feed/mapGrowthFeedEntries";
 import { GrowthIdeaStatus } from "@app-template/db/enums";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useMutationState, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Sparkles, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
@@ -22,6 +22,10 @@ import { SignalButton } from "@/components/home/SignalButton";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { getOrpcErrorMessage } from "@/utils/getOrpcErrorMessage";
 import { formatRelativeTime } from "@/utils/formatRelativeTime";
+import {
+  generateMarketingTasksMutationKey,
+  getGenerateMarketingTasksMutationOptions,
+} from "@/utils/generateMarketingTasksMutation";
 import { orpc } from "@/utils/orpc";
 
 type IdeaStatus = "pending" | "approved" | "postponed" | "cancelled";
@@ -189,6 +193,14 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
 
   const feedQuery = useQuery(feedQueryOptions);
 
+  const pendingTaskGenerations = useMutationState({
+    filters: {
+      mutationKey: generateMarketingTasksMutationKey,
+      status: "pending",
+    },
+  });
+  const isGeneratingTasks = pendingTaskGenerations.length > 0;
+
   const invalidateFeed = async () => {
     await queryClient.invalidateQueries({
       queryKey: feedQueryKey,
@@ -196,7 +208,7 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
   };
 
   const generateMutation = useMutation(
-    orpc.generateMarketingTasks.mutationOptions({
+    getGenerateMarketingTasksMutationOptions({
       onSuccess: async (result) => {
         setSelectedDay(growthAgentToday);
         queryClient.setQueryData(feedQueryKey, (old) => {
@@ -224,7 +236,7 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
     }),
   );
 
-  const isFeedBusy = generateMutation.isPending;
+  const isFeedBusy = isGeneratingTasks;
 
   const setItemCompletedMutation = useMutation(
     orpc.feed.setItemCompleted.mutationOptions({
@@ -412,7 +424,7 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
           {feedQuery.isFetching && !isInitialLoad ? (
             <span className="font-mono text-[11.5px] text-[rgba(23,20,15,0.45)]">Updating feed...</span>
           ) : null}
-          {generateMutation.isPending ? (
+          {isGeneratingTasks ? (
             <span className="font-mono text-[11.5px] text-[rgba(23,20,15,0.45)]">Generating tasks...</span>
           ) : null}
           <SignalButton
@@ -424,7 +436,7 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
             }}
           >
             <Sparkles className="size-[13px]" />
-            {generateMutation.isPending ? "Generating..." : "Generate today's tasks"}
+            {isGeneratingTasks ? "Generating..." : "Generate today's tasks"}
           </SignalButton>
           {lastGeneratedLabel == null ? null : (
             <div className="flex items-center gap-2 font-mono text-[11.5px] text-[rgba(23,20,15,0.45)]">
@@ -512,21 +524,26 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
       </div>
 
       <div className="mb-9 flex flex-col gap-2">
-        {visibleItems.map((item, index) => (
-          <GrowthAgentFeedItemRow
-            key={item.id}
-            index={index}
-            item={item}
-            completed={isCompleted(item)}
-            onToggle={() => {
-              setCompleted({ entryId: item.id, completed: !isCompleted(item) });
-            }}
-            onOpen={() => {
-              setDrawerContent({ kind: "item", item });
-            }}
-          />
-        ))}
-        {visibleItems.length === 0 ? (
+        {isGeneratingTasks ? (
+          <GrowthAgentFeedLoadingSkeleton />
+        ) : null}
+        {!isGeneratingTasks
+          ? visibleItems.map((item, index) => (
+              <GrowthAgentFeedItemRow
+                key={item.id}
+                index={index}
+                item={item}
+                completed={isCompleted(item)}
+                onToggle={() => {
+                  setCompleted({ entryId: item.id, completed: !isCompleted(item) });
+                }}
+                onOpen={() => {
+                  setDrawerContent({ kind: "item", item });
+                }}
+              />
+            ))
+          : null}
+        {!isGeneratingTasks && visibleItems.length === 0 ? (
           <p className="py-[30px] text-center text-[13.5px] text-[rgba(23,20,15,0.35)]">
             Nothing scheduled this day.
           </p>

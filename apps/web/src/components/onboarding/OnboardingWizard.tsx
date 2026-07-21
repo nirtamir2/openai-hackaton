@@ -19,6 +19,7 @@ import { PersonalityStep } from "@/components/onboarding/steps/PersonalityStep";
 import { TargetMarketStep } from "@/components/onboarding/steps/TargetMarketStep";
 import { WebsiteInputStep } from "@/components/onboarding/steps/WebsiteInputStep";
 import { getOrpcErrorMessage } from "@/utils/getOrpcErrorMessage";
+import { getGenerateMarketingTasksMutationOptions } from "@/utils/generateMarketingTasksMutation";
 import { orpc } from "@/utils/orpc";
 
 export function OnboardingWizard() {
@@ -27,16 +28,14 @@ export function OnboardingWizard() {
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [state, setState] = useState<OnboardingState>(createInitialOnboardingState);
   const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
-  const [isGenerationWorkComplete, setIsGenerationWorkComplete] = useState(false);
   const [productIdForFeed, setProductIdForFeed] = useState<string | null>(null);
 
   const generateTasksMutation = useMutation(
-    orpc.generateMarketingTasks.mutationOptions({
+    getGenerateMarketingTasksMutationOptions({
       onSuccess: async (_result, input) => {
         await queryClient.invalidateQueries({
           queryKey: orpc.feed.getFeed.key({ input: { productId: input.productId } }),
         });
-        setIsGenerationWorkComplete(true);
       },
       onError: (error) => {
         toast.error(getOrpcErrorMessage({ error }));
@@ -105,7 +104,7 @@ export function OnboardingWizard() {
       return (
         <DailyPlanGenerationProgress
           state={state}
-          isWorkComplete={isGenerationWorkComplete}
+          canNavigate={productIdForFeed != null}
           onComplete={handleNavigateToFeed}
         />
       );

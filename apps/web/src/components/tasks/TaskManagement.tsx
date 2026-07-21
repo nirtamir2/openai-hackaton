@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/Select";
 import { getTaskListDateRange } from "@/utils/taskDateTime";
 import { getOrpcErrorMessage } from "@/utils/getOrpcErrorMessage";
+import { getGenerateMarketingTasksMutationOptions } from "@/utils/generateMarketingTasksMutation";
 import { orpc } from "@/utils/orpc";
 
 interface Props {
@@ -54,7 +55,7 @@ export function TaskManagement({ productId }: Props) {
   );
 
   const generateMutation = useMutation(
-    orpc.generateMarketingTasks.mutationOptions({
+    getGenerateMarketingTasksMutationOptions({
       onMutate: () => {
         setIsGeneratingTasks(true);
       },

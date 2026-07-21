@@ -11,7 +11,7 @@ import type { OnboardingState } from "@/components/onboarding/onboardingTypes";
 
 interface Props {
   state: OnboardingState;
-  isWorkComplete: boolean;
+  canNavigate: boolean;
   onComplete: () => void;
 }
 
@@ -84,7 +84,7 @@ function buildPlanPreviews(state: OnboardingState) {
   return previews.slice(0, 4);
 }
 
-export function DailyPlanGenerationProgress({ state, isWorkComplete, onComplete }: Props) {
+export function DailyPlanGenerationProgress({ state, canNavigate, onComplete }: Props) {
   const planSteps = useMemo(() => buildPlanSteps(state), [state]);
   const planPreviews = useMemo(() => buildPlanPreviews(state), [state]);
   const [activeStepIndex, setActiveStepIndex] = useState(0);
@@ -138,7 +138,7 @@ export function DailyPlanGenerationProgress({ state, isWorkComplete, onComplete 
   }, [activeStepIndex, planSteps.length]);
 
   useEffect(() => {
-    if (!isComplete || !isWorkComplete) {
+    if (!isComplete || !canNavigate) {
       return;
     }
 
@@ -149,7 +149,7 @@ export function DailyPlanGenerationProgress({ state, isWorkComplete, onComplete 
     return () => {
       window.clearTimeout(navigateTimeoutId);
     };
-  }, [isComplete, isWorkComplete, onComplete]);
+  }, [isComplete, canNavigate, onComplete]);
 
   const progressPercent = isComplete
     ? 100
