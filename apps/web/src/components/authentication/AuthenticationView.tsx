@@ -75,7 +75,7 @@ function AuthenticationCard({
       <Card>
         <CardHeader>
           <CardTitle>{title}</CardTitle>
-          <p className="text-sm text-app-text-muted">{description}</p>
+          <p className="text-sm text-muted-foreground">{description}</p>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-4">{children}</div>
@@ -92,9 +92,9 @@ function PendingIcon({ isPending }: { isPending: boolean }) {
 function AuthenticationDivider({ label }: { label: string }) {
   return (
     <div className="flex items-center gap-3 py-1">
-      <div className="h-px flex-1 bg-app-border" />
-      <span className="text-xs font-semibold text-app-text-muted uppercase">{label}</span>
-      <div className="h-px flex-1 bg-app-border" />
+      <div className="h-px flex-1 bg-border" />
+      <span className="text-xs font-semibold text-muted-foreground uppercase">{label}</span>
+      <div className="h-px flex-1 bg-border" />
     </div>
   );
 }
@@ -152,7 +152,11 @@ function SocialProviderButton({
         });
       }}
     >
-      {isBusy ? <Loader2 className="size-4 animate-spin" /> : <ProviderIcon className="size-4" />}
+      {isBusy ? (
+        <Loader2 className="size-4 animate-spin" />
+      ) : (
+        <ProviderIcon className="size-4 grayscale" />
+      )}
       {continueWithLabel}
     </Button>
   );
@@ -229,11 +233,11 @@ function SignInView() {
         </Button>
       </form>
 
-      <div className="flex flex-col items-center gap-2 pt-1 text-sm text-app-text-muted">
-        <AuthLink href={getAuthPath({ view: "forgotPassword" })} className="hover:text-app-text">
+      <div className="flex flex-col items-center gap-2 pt-1 text-sm text-muted-foreground">
+        <AuthLink href={getAuthPath({ view: "forgotPassword" })} className="hover:text-foreground">
           {localization.auth.forgotPassword}
         </AuthLink>
-        <AuthLink href={getAuthPath({ view: "signUp" })} className="hover:text-app-text">
+        <AuthLink href={getAuthPath({ view: "signUp" })} className="hover:text-foreground">
           {localization.auth.needToCreateAnAccount} {localization.auth.signUp}
         </AuthLink>
       </div>
@@ -370,8 +374,8 @@ function SignUpView() {
         </Button>
       </form>
 
-      <div className="flex items-center justify-center pt-1 text-sm text-app-text-muted">
-        <AuthLink href={getAuthPath({ view: "signIn" })} className="hover:text-app-text">
+      <div className="flex items-center justify-center pt-1 text-sm text-muted-foreground">
+        <AuthLink href={getAuthPath({ view: "signIn" })} className="hover:text-foreground">
           {localization.auth.alreadyHaveAnAccount} {localization.auth.signIn}
         </AuthLink>
       </div>
@@ -430,8 +434,8 @@ function ForgotPasswordView() {
         </Button>
       </form>
 
-      <div className="flex items-center justify-center pt-1 text-sm text-app-text-muted">
-        <AuthLink href={getAuthPath({ view: "signIn" })} className="hover:text-app-text">
+      <div className="flex items-center justify-center pt-1 text-sm text-muted-foreground">
+        <AuthLink href={getAuthPath({ view: "signIn" })} className="hover:text-foreground">
           {localization.auth.rememberYourPassword} {localization.auth.signIn}
         </AuthLink>
       </div>
@@ -461,12 +465,12 @@ function ResetPasswordView({ token }: { token: string | undefined }) {
         title={localization.auth.resetPassword}
         description={m.auth_invalid_reset_password_token()}
       >
-        <div className="rounded-lg border border-app-red/25 bg-app-red/10 p-4 text-sm text-app-text">
+        <div className="rounded-lg border border-destructive/25 bg-destructive/10 p-4 text-sm text-foreground">
           {m.auth_reset_password_invalid_help()}
         </div>
         <AuthLink
           href={getAuthPath({ view: "forgotPassword" })}
-          className="text-sm text-app-text-muted hover:text-app-text"
+          className="text-sm text-muted-foreground hover:text-foreground"
         >
           {localization.auth.sendResetLink}
         </AuthLink>
@@ -565,7 +569,7 @@ function SignOutView() {
       description={m.auth_sign_out_description()}
     >
       {isPending ? <Loader /> : null}
-      <div className="flex items-center justify-center gap-2 text-sm text-app-text-muted">
+      <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
         <ShieldCheck className="size-4" />
         <span>{m.auth_redirecting_to_sign_in()}</span>
       </div>

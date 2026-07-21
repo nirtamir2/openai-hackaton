@@ -24,23 +24,6 @@
   --input: oklch(0.922 0 0);
   --ring: oklch(0.708 0 0);
   --radius: 0.5rem;
-
-  --app-canvas: #0b1020;
-  --app-surface: #111827;
-  --app-surface-raised: #172033;
-  --app-surface-soft: rgba(255, 255, 255, 0.055);
-  --app-surface-muted: rgba(255, 255, 255, 0.085);
-  --app-border: rgba(255, 255, 255, 0.12);
-  --app-border-strong: rgba(255, 255, 255, 0.22);
-  --app-text: #f8fafc;
-  --app-text-muted: rgba(248, 250, 252, 0.68);
-  --app-text-subtle: rgba(248, 250, 252, 0.46);
-  --app-blue: #60a5fa;
-  --app-accent: #2dd4bf;
-  --app-red: #fb7185;
-  --app-shadow-raised: 0 18px 48px rgba(0, 0, 0, 0.3);
-  --app-shadow-pressed: 0 10px 24px rgba(45, 212, 191, 0.18);
-  --ease-app-out: cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .dark {
@@ -88,20 +71,6 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-
-  --color-app-canvas: var(--app-canvas);
-  --color-app-surface: var(--app-surface);
-  --color-app-surface-raised: var(--app-surface-raised);
-  --color-app-surface-soft: var(--app-surface-soft);
-  --color-app-surface-muted: var(--app-surface-muted);
-  --color-app-border: var(--app-border);
-  --color-app-border-strong: var(--app-border-strong);
-  --color-app-text: var(--app-text);
-  --color-app-text-muted: var(--app-text-muted);
-  --color-app-text-subtle: var(--app-text-subtle);
-  --color-app-blue: var(--app-blue);
-  --color-app-accent: var(--app-accent);
-  --color-app-red: var(--app-red);
 }
 
 @layer base {
@@ -114,7 +83,7 @@
   }
 
   body {
-    @apply bg-app-canvas font-sans text-app-text;
+    @apply bg-background font-sans text-foreground antialiased;
   }
 
   button:not(:disabled),
@@ -125,27 +94,11 @@
 
 @layer utilities {
   .focus-ring {
-    @apply focus-visible:ring-2 focus-visible:ring-app-accent/50 focus-visible:ring-offset-2 focus-visible:ring-offset-app-canvas focus-visible:outline-none;
+    @apply focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none;
   }
 
   .shimmer {
-    background: linear-gradient(
-      90deg,
-      rgba(255, 255, 255, 0.05) 0%,
-      rgba(255, 255, 255, 0.1) 50%,
-      rgba(255, 255, 255, 0.05) 100%
-    );
-    background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
-  }
-
-  @keyframes shimmer {
-    0% {
-      background-position: -200% 0;
-    }
-    100% {
-      background-position: 200% 0;
-    }
+    @apply animate-pulse bg-muted;
   }
 
   @media (prefers-reduced-motion: reduce) {

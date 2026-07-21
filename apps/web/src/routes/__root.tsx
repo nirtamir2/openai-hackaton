@@ -31,7 +31,7 @@ export const Route = createRootRouteWithContext<RouterAppContext>()({
           name: "viewport",
           content: "width=device-width, initial-scale=1, viewport-fit=cover",
         },
-        { name: "theme-color", content: "#0b1020" },
+        { name: "theme-color", content: "#ffffff" },
         { name: "apple-mobile-web-app-title", content: appName() },
         ...seo.meta,
       ],
@@ -57,9 +57,9 @@ function RootDocument() {
       <head>
         <HeadContent />
       </head>
-      <body className="bg-app-canvas text-app-text antialiased">
+      <body className="bg-background text-foreground antialiased">
         <Outlet />
-        <Toaster richColors />
+        <Toaster />
         <script src="/register-service-worker.js" defer />
 
         <TanStackDevtools

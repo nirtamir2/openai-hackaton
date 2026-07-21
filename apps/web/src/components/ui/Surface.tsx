@@ -3,14 +3,14 @@ import type { VariantProps } from "class-variance-authority";
 import { cva } from "class-variance-authority";
 
 export const surfaceVariants = cva(
-  "overflow-hidden border text-app-text shadow-(--app-shadow-raised) transition-[transform,border-color,background-color,box-shadow] duration-180 ease-(--ease-app-out)",
+  "overflow-hidden border text-card-foreground shadow-sm transition-[border-color,background-color,box-shadow]",
   {
     variants: {
       tone: {
-        neutral: "border-app-border bg-app-surface-soft",
-        raised: "border-app-border bg-app-surface-raised",
-        accent: "border-app-accent/35 bg-app-accent/10",
-        danger: "border-app-red/35 bg-app-red/10",
+        neutral: "border-border bg-card",
+        raised: "border-border bg-popover text-popover-foreground",
+        accent: "border-border bg-accent text-accent-foreground",
+        danger: "border-destructive/35 bg-destructive/10",
       },
       radius: {
         sm: "rounded-lg",
@@ -24,7 +24,7 @@ export const surfaceVariants = cva(
         lg: "p-6 md:p-8",
       },
       interactive: {
-        true: "cursor-pointer hover:border-app-border-strong hover:bg-app-surface-muted active:scale-[0.97]",
+        true: "cursor-pointer hover:bg-accent hover:text-accent-foreground",
         false: "",
       },
       align: {

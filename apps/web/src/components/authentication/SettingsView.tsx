@@ -111,7 +111,7 @@ function AccountSettingsView({
       <Card>
         <CardHeader>
           <CardTitle>{m.profile()}</CardTitle>
-          <p className="text-sm text-app-text-muted">{m.settings_profile_description()}</p>
+          <p className="text-sm text-muted-foreground">{m.settings_profile_description()}</p>
         </CardHeader>
         <CardContent>
           <form className="flex flex-col gap-4" onSubmit={handleProfileSubmit}>
@@ -139,7 +139,7 @@ function AccountSettingsView({
       <Card>
         <CardHeader>
           <CardTitle>{m.change_email()}</CardTitle>
-          <p className="text-sm text-app-text-muted">{m.settings_change_email_description()}</p>
+          <p className="text-sm text-muted-foreground">{m.settings_change_email_description()}</p>
         </CardHeader>
         <CardContent>
           <form className="flex flex-col gap-4" onSubmit={handleEmailSubmit}>
@@ -187,7 +187,7 @@ function SecuritySettingsView() {
         <Card>
           <CardHeader>
             <CardTitle>{localization.settings.linkedAccounts}</CardTitle>
-            <p className="text-sm text-app-text-muted">
+            <p className="text-sm text-muted-foreground">
               {m.settings_linked_accounts_description()}
             </p>
           </CardHeader>
@@ -213,7 +213,7 @@ function SecuritySettingsView() {
       <Card>
         <CardHeader>
           <CardTitle>{m.security()}</CardTitle>
-          <p className="text-sm text-app-text-muted">{m.settings_security_description()}</p>
+          <p className="text-sm text-muted-foreground">{m.settings_security_description()}</p>
         </CardHeader>
         <CardContent>
           <Button
@@ -260,14 +260,14 @@ function LinkedAccountRow({
   const isBusy = isLinking || isUnlinking;
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-app-border bg-app-surface-muted p-4">
+    <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-border bg-muted/50 p-4">
       <div className="flex min-w-0 items-center gap-3">
-        <div className="flex size-10 items-center justify-center rounded-lg border border-app-border bg-app-surface-soft text-app-text">
-          <ProviderIcon className="size-4" />
+        <div className="flex size-10 items-center justify-center rounded-md border border-border bg-background text-foreground">
+          <ProviderIcon className="size-4 grayscale" />
         </div>
         <div className="flex min-w-0 flex-col gap-1">
-          <div className="text-sm font-medium text-app-text">{providerName}</div>
-          <div className="truncate text-xs text-app-text-muted">
+          <div className="text-sm font-medium text-foreground">{providerName}</div>
+          <div className="truncate text-xs text-muted-foreground">
             {account == null
               ? localization.settings.linkProvider.replace("{{provider}}", providerName)
               : account.accountId}

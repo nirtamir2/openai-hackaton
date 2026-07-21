@@ -16,8 +16,8 @@ export function ErrorBoundaryFallback({ error, reset }: ErrorComponentProps) {
     <div className="flex min-h-screen items-center justify-center p-4">
       <Card>
         <CardHeader>
-          <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-app-red/10">
-            <AlertTriangle className="size-6 text-app-red" />
+          <div className="mx-auto flex size-12 items-center justify-center rounded-full bg-destructive/10">
+            <AlertTriangle className="size-6 text-destructive" />
           </div>
           <div className="text-center">
             <CardTitle>{m.something_went_wrong()}</CardTitle>
@@ -25,7 +25,7 @@ export function ErrorBoundaryFallback({ error, reset }: ErrorComponentProps) {
         </CardHeader>
         <CardContent>
           <div className="flex max-w-sm flex-col gap-4 text-center">
-            <p className="text-sm text-app-text-muted">{m.unexpected_error_occurred()}</p>
+            <p className="text-sm text-muted-foreground">{m.unexpected_error_occurred()}</p>
             <div className="flex flex-col gap-2">
               <Button
                 size="sm"

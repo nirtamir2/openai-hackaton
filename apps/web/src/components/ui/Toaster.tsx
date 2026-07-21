@@ -8,10 +8,10 @@ import {
 import type { ToasterProps } from "sonner";
 import { Toaster as Sonner } from "sonner";
 
-export const Toaster = (props: Omit<ToasterProps, "className">) => {
+export function Toaster(props: Omit<ToasterProps, "className">) {
   return (
     <Sonner
-      theme="dark"
+      theme="system"
       toastOptions={{
         classNames: {
           toast: "cn-toast",
@@ -36,4 +36,4 @@ export const Toaster = (props: Omit<ToasterProps, "className">) => {
       {...props}
     />
   );
-};
+}

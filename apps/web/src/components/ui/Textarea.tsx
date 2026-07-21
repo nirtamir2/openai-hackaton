@@ -3,14 +3,13 @@ import type { VariantProps } from "class-variance-authority";
 import { cva } from "class-variance-authority";
 
 export const textareaVariants = cva(
-  "flex field-sizing-content min-h-24 w-full resize-none rounded-lg border bg-app-surface-soft px-4 py-3 text-sm text-app-text transition-[border-color,background-color,box-shadow] duration-150 ease-(--ease-app-out) outline-none placeholder:text-app-text-subtle disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-app-red aria-invalid:ring-2 aria-invalid:ring-app-red/20",
+  "flex field-sizing-content min-h-20 w-full resize-y rounded-md border bg-transparent px-3 py-2 text-base text-foreground shadow-xs transition-[color,box-shadow] outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 md:text-sm dark:bg-input/30 dark:aria-invalid:ring-destructive/40",
   {
     variants: {
       tone: {
-        neutral:
-          "border-app-border focus-visible:border-app-accent/80 focus-visible:ring-2 focus-visible:ring-app-accent/25",
+        neutral: "border-input",
         danger:
-          "border-app-red/35 bg-app-red/10 focus-visible:border-app-red/80 focus-visible:ring-2 focus-visible:ring-app-red/25",
+          "border-destructive bg-destructive/5 focus-visible:border-destructive focus-visible:ring-destructive/20",
       },
     },
     defaultVariants: {

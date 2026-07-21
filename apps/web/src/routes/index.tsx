@@ -1,6 +1,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { ArrowRight, Database, Lock, Route as RouteIcon, ShieldCheck, Sparkles } from "lucide-react";
+import {
+  ArrowRight,
+  Database,
+  Lock,
+  Route as RouteIcon,
+  ShieldCheck,
+  Sparkles,
+} from "lucide-react";
 import { GlobalHeaderControls } from "@/components/layout/GlobalHeaderControls";
 import { PageLayout } from "@/components/layout/PageLayout";
 import { Button } from "@/components/ui/Button";
@@ -57,17 +64,21 @@ function HomeComponent() {
   });
 
   return (
-    <PageLayout title={appName()} subtitle={m.seo_root_description()} headerControls={<GlobalHeaderControls />}>
+    <PageLayout
+      title={appName()}
+      subtitle={m.seo_root_description()}
+      headerControls={<GlobalHeaderControls />}
+    >
       <div className="mx-auto flex max-w-5xl flex-col gap-8">
         <section className="grid gap-6 py-6 md:grid-cols-[1fr_auto] md:items-end">
           <div className="flex flex-col gap-4">
-            <p className="text-sm font-semibold tracking-wider text-app-accent uppercase">
+            <p className="text-sm font-semibold tracking-wider text-primary uppercase">
               {m.template_badge()}
             </p>
             <h2 className="max-w-3xl text-4xl/tight font-semibold tracking-tight md:text-6xl/tight">
               {m.home_title()}
             </h2>
-            <p className="max-w-2xl text-base/7 text-app-text-muted md:text-lg/8">
+            <p className="max-w-2xl text-base/7 text-muted-foreground md:text-lg/8">
               {m.home_subtitle()}
             </p>
           </div>
@@ -103,11 +114,11 @@ function HomeComponent() {
           {stackItems.map((item) => (
             <Card key={item.title} size="sm">
               <CardHeader>
-                <item.icon className="size-5 text-app-accent" />
+                <item.icon className="size-5 text-primary" />
                 <CardTitle>{item.title}</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-app-text-muted">{item.description}</p>
+                <p className="text-sm text-muted-foreground">{item.description}</p>
               </CardContent>
             </Card>
           ))}
@@ -150,8 +161,8 @@ function StatusCard({
       </CardHeader>
       <CardContent>
         <div className="flex flex-col gap-2">
-          <p className="font-mono text-sm text-app-accent">{value}</p>
-          <p className="text-sm text-app-text-muted">{description}</p>
+          <p className="font-mono text-sm text-primary">{value}</p>
+          <p className="text-sm text-muted-foreground">{description}</p>
         </div>
       </CardContent>
     </Card>
