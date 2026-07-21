@@ -151,7 +151,13 @@ export async function syncMarketingTaskToGrowthFeed(
   });
 }
 
-export async function syncMarketingTasksToGrowthFeed({ productId }: { productId: string }) {
+export async function syncMarketingTasksToGrowthFeed({
+  productId,
+  enrich = true,
+}: {
+  productId: string;
+  enrich?: boolean;
+}) {
   const tasks = await prisma.productMarketingTask.findMany({
     where: { productId },
     orderBy: [{ scheduledStart: "asc" }],
@@ -212,17 +218,23 @@ export async function syncMarketingTasksToGrowthFeed({ productId }: { productId:
     return;
   }
 
-  const sentimentContext = await getProductSentimentContext({ productId });
-  const draftContext =
-    sentimentContext == null
-      ? null
-      : {
+  const draftContext = enrich
+    ? await (async () => {
+        const sentimentContext = await getProductSentimentContext({ productId });
+
+        if (sentimentContext == null) {
+          return null;
+        }
+
+        return {
           product: sentimentContext.product,
           marketingProfile: sentimentContext.marketingProfile,
           marketingTasks: sentimentContext.marketingTasks,
           sentiments: sentimentContext.sentiments,
           trend: null,
         };
+      })()
+    : null;
 
   await Promise.all(
     tasksToSync.map((task) => syncMarketingTaskToGrowthFeed(task, draftContext)),

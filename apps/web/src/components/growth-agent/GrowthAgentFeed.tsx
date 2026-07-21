@@ -18,8 +18,8 @@ import type {
   GrowthAgentProject,
 } from "@/components/growth-agent/growthAgentTypes";
 import { getGrowthAgentDays, getGrowthAgentToday } from "@/components/growth-agent/growthAgentWeek";
-import { Loader } from "@/components/layout/Loader";
 import { SignalButton } from "@/components/home/SignalButton";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { getOrpcErrorMessage } from "@/utils/getOrpcErrorMessage";
 import { formatRelativeTime } from "@/utils/formatRelativeTime";
 import { orpc } from "@/utils/orpc";
@@ -148,6 +148,19 @@ function isCompleted(item: GrowthAgentFeedItem) {
 
 function getProjectDoneCount(project: GrowthAgentProject) {
   return project.todos.filter((todo) => todo.done).length;
+}
+
+function GrowthAgentFeedLoadingSkeleton() {
+  return (
+    <div className="flex flex-col gap-2">
+      {Array.from({ length: 4 }, (_, index) => (
+        <Skeleton
+          key={index}
+          style={{ height: "4.5rem", width: "100%", borderRadius: "0.875rem" }}
+        />
+      ))}
+    </div>
+  );
 }
 
 export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
@@ -388,24 +401,15 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
     return formatRelativeTime({ value: lastGeneratedAt, now: relativeNow });
   }, [feedQuery.data?.lastGeneratedAt, relativeNow]);
 
-  if (feedQuery.isLoading) {
-    return <Loader />;
-  }
-
-  if (feedQuery.isError) {
-    return (
-      <p className="py-[30px] text-center text-[13.5px] text-[rgba(23,20,15,0.55)]">
-        Could not load your growth feed. Check that the database is running and seeded.
-      </p>
-    );
-  }
+  const hasFeedData = feedQuery.data != null;
+  const isInitialLoad = feedQuery.isPending;
 
   return (
     <div className="flex flex-col">
       <div className="mb-5 flex flex-wrap items-baseline justify-between gap-3">
         <h1 className="text-[26px] font-semibold tracking-[-0.3px]">This week</h1>
         <div className="flex flex-wrap items-center gap-3">
-          {feedQuery.isFetching ? (
+          {feedQuery.isFetching && !isInitialLoad ? (
             <span className="font-mono text-[11.5px] text-[rgba(23,20,15,0.45)]">Updating feed...</span>
           ) : null}
           {generateMutation.isPending ? (
@@ -414,7 +418,7 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
           <SignalButton
             variant="secondary"
             size="sm"
-            disabled={isFeedBusy}
+            disabled={isFeedBusy || isInitialLoad}
             onClick={() => {
               generateMutation.mutate({ productId, forToday: true, taskCount: 3 });
             }}
@@ -431,10 +435,34 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
         </div>
       </div>
 
-      <div
-        className={isFeedBusy ? "pointer-events-none opacity-60" : undefined}
-      >
+      {feedQuery.isError && !hasFeedData ? (
+        <p className="py-[30px] text-center text-[13.5px] text-[rgba(23,20,15,0.55)]">
+          Could not load your growth feed. Check that the database is running and seeded.
+        </p>
+      ) : null}
 
+      {isInitialLoad ? (
+        <div className="flex flex-col">
+          <div className="mb-6">
+            <GrowthAgentDayPicker
+              days={growthAgentDays}
+              selectedDay={selectedDay}
+              dayDots={dayDots}
+              todayKey={growthAgentToday}
+              onSelectDay={setSelectedDay}
+            />
+          </div>
+          <div className="mb-2.5">
+            <p className="text-[12.5px] font-semibold tracking-[0.3px] text-[rgba(23,20,15,0.45)]">
+              {selectedDayLabel}
+            </p>
+          </div>
+          <GrowthAgentFeedLoadingSkeleton />
+        </div>
+      ) : null}
+
+      {hasFeedData ? (
+        <>
       {liveItem == null ? null : (
         <button
           type="button"
@@ -545,7 +573,8 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
           />
         ))}
       </div>
-      </div>
+        </>
+      ) : null}
 
       <GrowthAgentTaskDrawer
         content={drawerContent}

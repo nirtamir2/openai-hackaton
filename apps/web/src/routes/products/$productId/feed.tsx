@@ -23,8 +23,8 @@ export const Route = createFileRoute("/products/$productId/feed")({
       ],
     };
   },
-  loader: async ({ context, params }) => {
-    await context.queryClient.ensureQueryData(
+  loader: ({ context, params }) => {
+    void context.queryClient.prefetchQuery(
       context.orpc.feed.getFeed.queryOptions({
         input: { productId: params.productId },
       }),
