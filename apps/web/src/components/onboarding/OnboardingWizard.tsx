@@ -1,7 +1,11 @@
+import { MOCK_PRODUCT_ID } from "@app-template/db/mockProductId";
+import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { getCompanyNameFromUrl } from "@/components/growth-agent/growthAgentMockData";
 import { OnboardingLayout } from "@/components/onboarding/OnboardingLayout";
 import { createInitialOnboardingState } from "@/components/onboarding/onboardingMockData";
 import { onboardingSteps } from "@/components/onboarding/onboardingSteps";
+import { saveOnboardingCompanyName } from "@/components/onboarding/onboardingStorage";
 import type { OnboardingState } from "@/components/onboarding/onboardingTypes";
 import { CapacityStep } from "@/components/onboarding/steps/CapacityStep";
 import { ChannelsStep } from "@/components/onboarding/steps/ChannelsStep";
@@ -12,10 +16,21 @@ import { TargetMarketStep } from "@/components/onboarding/steps/TargetMarketStep
 import { WebsiteInputStep } from "@/components/onboarding/steps/WebsiteInputStep";
 
 export function OnboardingWizard() {
+  const navigate = useNavigate();
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [state, setState] = useState<OnboardingState>(createInitialOnboardingState);
 
   const currentStepId = onboardingSteps[currentStepIndex].id;
+
+  function handleOnboardingComplete() {
+    const companyName = getCompanyNameFromUrl({ url: state.website.url });
+    saveOnboardingCompanyName({ companyName });
+
+    void navigate({
+      to: "/products/$productId/feed",
+      params: { productId: MOCK_PRODUCT_ID },
+    });
+  }
 
   function goToNextStep() {
     setCurrentStepIndex((index) => Math.min(index + 1, onboardingSteps.length - 1));
@@ -99,7 +114,13 @@ export function OnboardingWizard() {
         );
       }
       case "report": {
-        return <ReportStep state={state} onBack={goToPreviousStep} />;
+        return (
+          <ReportStep
+            state={state}
+            onBack={goToPreviousStep}
+            onComplete={handleOnboardingComplete}
+          />
+        );
       }
       default: {
         return null;

@@ -20,6 +20,7 @@ import { Route as AuthPathRouteImport } from './routes/auth/$path'
 import { Route as ApiOgRouteImport } from './routes/api/og'
 import { Route as AccountAccountViewRouteImport } from './routes/account/$accountView'
 import { Route as ProductsProductIdTasksRouteImport } from './routes/products/$productId/tasks'
+import { Route as ProductsProductIdFeedRouteImport } from './routes/products/$productId/feed'
 import { Route as ApiRpcSplatRouteImport } from './routes/api/rpc/$'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
@@ -78,6 +79,11 @@ const ProductsProductIdTasksRoute = ProductsProductIdTasksRouteImport.update({
   path: '/products/$productId/tasks',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProductsProductIdFeedRoute = ProductsProductIdFeedRouteImport.update({
+  id: '/products/$productId/feed',
+  path: '/products/$productId/feed',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiRpcSplatRoute = ApiRpcSplatRouteImport.update({
   id: '/api/rpc/$',
   path: '/api/rpc/$',
@@ -102,6 +108,7 @@ export interface FileRoutesByFullPath {
   '/settings/$path': typeof SettingsPathRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
+  '/products/$productId/feed': typeof ProductsProductIdFeedRoute
   '/products/$productId/tasks': typeof ProductsProductIdTasksRoute
 }
 export interface FileRoutesByTo {
@@ -117,6 +124,7 @@ export interface FileRoutesByTo {
   '/settings/$path': typeof SettingsPathRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
+  '/products/$productId/feed': typeof ProductsProductIdFeedRoute
   '/products/$productId/tasks': typeof ProductsProductIdTasksRoute
 }
 export interface FileRoutesById {
@@ -133,6 +141,7 @@ export interface FileRoutesById {
   '/settings/$path': typeof SettingsPathRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
+  '/products/$productId/feed': typeof ProductsProductIdFeedRoute
   '/products/$productId/tasks': typeof ProductsProductIdTasksRoute
 }
 export interface FileRouteTypes {
@@ -150,6 +159,7 @@ export interface FileRouteTypes {
     | '/settings/$path'
     | '/api/auth/$'
     | '/api/rpc/$'
+    | '/products/$productId/feed'
     | '/products/$productId/tasks'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -165,6 +175,7 @@ export interface FileRouteTypes {
     | '/settings/$path'
     | '/api/auth/$'
     | '/api/rpc/$'
+    | '/products/$productId/feed'
     | '/products/$productId/tasks'
   id:
     | '__root__'
@@ -180,6 +191,7 @@ export interface FileRouteTypes {
     | '/settings/$path'
     | '/api/auth/$'
     | '/api/rpc/$'
+    | '/products/$productId/feed'
     | '/products/$productId/tasks'
   fileRoutesById: FileRoutesById
 }
@@ -196,6 +208,7 @@ export interface RootRouteChildren {
   SettingsPathRoute: typeof SettingsPathRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiRpcSplatRoute: typeof ApiRpcSplatRoute
+  ProductsProductIdFeedRoute: typeof ProductsProductIdFeedRoute
   ProductsProductIdTasksRoute: typeof ProductsProductIdTasksRoute
 }
 
@@ -278,6 +291,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProductsProductIdTasksRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/products/$productId/feed': {
+      id: '/products/$productId/feed'
+      path: '/products/$productId/feed'
+      fullPath: '/products/$productId/feed'
+      preLoaderRoute: typeof ProductsProductIdFeedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/rpc/$': {
       id: '/api/rpc/$'
       path: '/api/rpc/$'
@@ -308,6 +328,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsPathRoute: SettingsPathRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiRpcSplatRoute: ApiRpcSplatRoute,
+  ProductsProductIdFeedRoute: ProductsProductIdFeedRoute,
   ProductsProductIdTasksRoute: ProductsProductIdTasksRoute,
 }
 export const routeTree = rootRouteImport

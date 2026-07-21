@@ -115,6 +115,21 @@
     font-family: "IBM Plex Mono", monospace;
   }
 
+  .signal-pulse-dot {
+    animation: signal-pulse-dot 1.4s ease-in-out infinite;
+  }
+
+  @keyframes signal-pulse-dot {
+    0%,
+    100% {
+      opacity: 1;
+    }
+
+    50% {
+      opacity: 0.35;
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     *,
     ::before,
