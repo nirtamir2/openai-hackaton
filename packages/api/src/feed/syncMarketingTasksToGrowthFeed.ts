@@ -18,6 +18,20 @@ import { getProductSentimentContext } from "../sentiment/getProductSentimentCont
 
 const dayKeys = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value != null && !Array.isArray(value);
+}
+
+function readStoredVideoHook(payload: unknown) {
+  if (!isRecord(payload)) {
+    return null;
+  }
+
+  const videoHook = payload.videoHook;
+
+  return typeof videoHook === "string" && videoHook.trim().length > 0 ? videoHook.trim() : null;
+}
+
 function getDayKeyFromDate(date: Date) {
   return dayKeys[date.getDay()] ?? "mon";
 }
@@ -42,24 +56,33 @@ function buildShortTaskFeedPayload(task: ProductMarketingTaskModel) {
     colorBg,
     title: buildTaskPreviewTitle({ description }),
     description,
-    meta: `AI generated · Priority ${String(task.priority)}`,
+    meta: `Priority ${String(task.priority)}`,
     marketingTaskId: task.id,
     isVideo: task.contentType === MarketingTaskContentType.VIDEO,
   };
 }
 
-function buildLongTaskFeedPayload(task: ProductMarketingTaskModel) {
+function buildLongTaskFeedPayload({
+  task,
+  videoHook,
+}: {
+  task: ProductMarketingTaskModel;
+  videoHook: string | null;
+}) {
   const description = task.description.trim();
   const subtasks = parseMarketingTaskSubtasks(task.subtasks);
+  const titleSource = videoHook ?? description;
 
   return {
     tag: "PROJECT",
     color: "#6a3fd1",
     colorBg: "rgba(106,63,209,0.1)",
-    title: buildTaskPreviewTitle({ description }),
+    title: buildTaskPreviewTitle({ description: titleSource }),
     description,
-    meta: `Ongoing project · Priority ${String(task.priority)}`,
+    meta: `Idea · Priority ${String(task.priority)}`,
     marketingTaskId: task.id,
+    isVideo: task.contentType === MarketingTaskContentType.VIDEO,
+    videoHook,
     todos: subtasks.map((subtask) => ({
       id: subtask.id,
       text: subtask.text,
@@ -71,6 +94,7 @@ function buildLongTaskFeedPayload(task: ProductMarketingTaskModel) {
 export async function syncMarketingTaskToGrowthFeed(
   task: ProductMarketingTaskModel,
   context: MarketingTaskGenerationContext | null = null,
+  options: { videoHook?: string | null } = {},
 ) {
   const externalId = getMarketingTaskExternalId({ taskId: task.id });
   const isLongTask = task.taskType === MarketingTaskType.LONG;
@@ -88,7 +112,10 @@ export async function syncMarketingTaskToGrowthFeed(
   });
 
   const basePayload = isLongTask
-    ? buildLongTaskFeedPayload(task)
+    ? buildLongTaskFeedPayload({
+        task,
+        videoHook: options.videoHook ?? readStoredVideoHook(existingEntry?.payload),
+      })
     : buildShortTaskFeedPayload(task);
   const payload = isLongTask
     ? basePayload
@@ -113,13 +140,13 @@ export async function syncMarketingTaskToGrowthFeed(
       dayKey: isLongTask ? null : getDayKeyFromDate(task.scheduledStart),
       sortOrder: 1_000 + task.priority,
       completed: false,
-      payload,
+      payload: payload as never,
     },
     update: {
       kind: isLongTask ? GrowthFeedEntryKind.PROJECT : GrowthFeedEntryKind.FEED_ITEM,
       dayKey: isLongTask ? null : getDayKeyFromDate(task.scheduledStart),
       sortOrder: 1_000 + task.priority,
-      payload,
+      payload: payload as never,
     },
   });
 }

@@ -20,9 +20,10 @@ enum MarketingTaskNetwork {
 model Product {
   id                 String                 @id @default(uuid()) @db.Uuid
   generalDescription String                 @map("general_description")
-  plusSides          String                 @map("plus_sides")
-  minusSides         String                 @map("minus_sides")
-  mainCompetitors    String                 @map("main_competitors")
+  plusSides             String                 @map("plus_sides")
+  minusSides            String                 @map("minus_sides")
+  mainCompetitors       String                 @map("main_competitors")
+  competitorWeaknesses  String                 @default("") @map("competitor_weaknesses")
   websiteUrl         String                 @default("") @map("website_url")
   onboardingConfig            Json                   @default("{}") @map("onboarding_config")
   marketingTasksGeneratedAt     DateTime?              @map("marketing_tasks_generated_at") @db.Timestamptz

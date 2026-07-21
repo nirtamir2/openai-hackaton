@@ -6,6 +6,7 @@ import { TaskTypeBadge } from "@/components/tasks/TaskTypeBadge";
 interface Props {
   pendingIdeas: Array<GrowthAgentIdea>;
   postponedIdeas: Array<GrowthAgentIdea>;
+  showEmptyState: boolean;
   onOpenIdea: (idea: GrowthAgentIdea) => void;
   onApprove: (entryId: string) => void;
   onPostpone: (entryId: string) => void;
@@ -16,6 +17,7 @@ interface Props {
 export function GrowthAgentIdeaPanel({
   pendingIdeas,
   postponedIdeas,
+  showEmptyState,
   onOpenIdea,
   onApprove,
   onPostpone,
@@ -110,9 +112,9 @@ export function GrowthAgentIdeaPanel({
         </div>
       ))}
 
-      {!hasIdeas ? (
+      {!hasIdeas && showEmptyState ? (
         <p className="py-[18px] text-center text-[13.5px] text-[rgba(23,20,15,0.35)]">
-          No new ideas yet. Generate tasks to get a fresh project suggestion.
+          No new video ideas yet. Generate tasks to get a fresh video project suggestion.
         </p>
       ) : null}
     </div>

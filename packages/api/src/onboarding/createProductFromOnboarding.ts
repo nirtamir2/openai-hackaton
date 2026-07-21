@@ -5,6 +5,7 @@ interface OnboardingWebsiteInput {
   companyDescription: string;
   keyDifferentiators: string;
   competitors: string;
+  competitorWeaknesses: string;
   subreddits: string;
   searchKeywordsX: string;
   searchKeywordsGoogle: string;
@@ -49,6 +50,7 @@ export async function createProductFromOnboarding(input: Props) {
       plusSides: input.website.keyDifferentiators.trim(),
       minusSides: "Not specified yet.",
       mainCompetitors: input.website.competitors.trim(),
+      competitorWeaknesses: input.website.competitorWeaknesses.trim(),
       websiteUrl: input.website.url.trim(),
       onboardingConfig,
     },

@@ -150,16 +150,20 @@ export async function enrichMarketingTaskFeedPayload({
     return nextPayload;
   }
 
-  const draftContent = await generateMarketingTaskDraftContent({
-    description: task.description,
-    contentType: task.contentType,
-    network: task.network,
-    context,
-  });
+  try {
+    const draftContent = await generateMarketingTaskDraftContent({
+      description: task.description,
+      contentType: task.contentType,
+      network: task.network,
+      context,
+    });
 
-  return applyDraftContent({
-    payload: nextPayload,
-    draftContent,
-    task,
-  });
+    return applyDraftContent({
+      payload: nextPayload,
+      draftContent,
+      task,
+    });
+  } catch {
+    return nextPayload;
+  }
 }

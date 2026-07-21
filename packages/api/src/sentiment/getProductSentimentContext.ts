@@ -37,6 +37,7 @@ export async function getProductSentimentContext({ productId }: { productId: str
       plusSides: product.plusSides,
       minusSides: product.minusSides,
       mainCompetitors: product.mainCompetitors,
+      competitorWeaknesses: product.competitorWeaknesses,
     },
     marketingProfile: readProductMarketingProfile({
       websiteUrl: product.websiteUrl,

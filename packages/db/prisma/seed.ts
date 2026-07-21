@@ -62,6 +62,8 @@ async function seedMarketSentiment(prisma: PrismaClient) {
         minusSides:
           "Limited mobile SDK coverage, advanced segmentation is locked behind higher tiers, and export options are basic on lower plans.",
         mainCompetitors: "Mixpanel, Amplitude, Heap, PostHog",
+        competitorWeaknesses:
+          "Mixpanel has a steep learning curve for non-technical teams, Amplitude locks advanced cohort analysis behind expensive enterprise tiers, Heap requires heavy implementation before insights appear, PostHog self-hosting adds operational overhead for small teams",
         sentiments: {
           create: [...mockSentimentData],
         },

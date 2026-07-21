@@ -41,6 +41,7 @@ export function buildProductSentimentSystemPrompt(context: ProductSentimentConte
     `- Strengths: ${context.product.plusSides}`,
     `- Weaknesses: ${context.product.minusSides}`,
     `- Main competitors: ${context.product.mainCompetitors}`,
+    `- Competitor weaknesses: ${context.product.competitorWeaknesses.length > 0 ? context.product.competitorWeaknesses : "Not documented yet."}`,
     "",
     "Marketing tasks:",
     marketingTasksSummary,

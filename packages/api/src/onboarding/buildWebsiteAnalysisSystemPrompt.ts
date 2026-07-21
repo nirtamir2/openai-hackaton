@@ -17,6 +17,7 @@ export function buildWebsiteAnalysisSystemPrompt({ url, websiteContent }: Props)
     "Write in clear, direct English suitable for a marketing brief.",
     "For list-style fields, use comma-separated values without bullet characters.",
     "For keyDifferentiators, return exactly 3-4 items. Each item should be a slightly longer phrase or short clause (about 8-20 words), not just a few words. Do not use commas inside individual items.",
+    "For competitorWeaknesses, return exactly 3-4 items. Each item should name a competitor and a concrete weakness this product can exploit in marketing (about 8-20 words). Do not use commas inside individual items.",
     "For subreddits, include the r/ prefix.",
     "Generate 5 target market focus options the founder can choose from — audiences they may want to reach or prioritize in marketing.",
     "Generate 5 brand personality options the founder can choose from — voices they may want to lead with in marketing.",

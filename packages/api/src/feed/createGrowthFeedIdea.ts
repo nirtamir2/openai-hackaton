@@ -10,6 +10,7 @@ interface TaskDraft {
   description: string;
   contentType: MarketingTaskContentType;
   network: MarketingTaskNetwork;
+  videoHook: string;
   subtasks: Array<{ id: string; text: string; done: boolean }>;
   priority: number;
   targetDate: Date;
@@ -25,13 +26,15 @@ interface Props {
 
 export async function createGrowthFeedIdea({ productId, task }: Props) {
   const description = task.description.trim();
+  const videoHook = task.videoHook.trim();
   const externalId = `idea-${crypto.randomUUID()}`;
 
   const payload = {
-    title: buildTaskPreviewTitle({ description }),
-    meta: `New idea · Priority ${String(task.priority)}`,
+    title: buildTaskPreviewTitle({ description: videoHook }),
+    meta: `New video idea · Priority ${String(task.priority)}`,
     description: buildIdeaDescription({ description }),
-    why: "Multi-step growth initiative based on your product positioning and recent sentiment.",
+    videoHook,
+    why: "Multi-week video project built around a competitor weakness your product can exploit.",
     todos: task.subtasks.map((subtask) => ({
       id: subtask.id,
       text: subtask.text,
@@ -41,6 +44,7 @@ export async function createGrowthFeedIdea({ productId, task }: Props) {
       description,
       contentType: task.contentType,
       network: task.network,
+      videoHook,
       subtasks: task.subtasks,
       priority: task.priority,
       targetDate: task.targetDate.toISOString(),

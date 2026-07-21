@@ -1,7 +1,7 @@
 import type { GrowthAgentFeedData } from "@app-template/api/feed/mapGrowthFeedEntries";
 import { GrowthIdeaStatus } from "@app-template/db/enums";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { GrowthAgentDayPicker } from "@/components/growth-agent/GrowthAgentDayPicker";
@@ -9,6 +9,7 @@ import { GrowthAgentFeedItemRow } from "@/components/growth-agent/GrowthAgentFee
 import { GrowthAgentIdeaPanel } from "@/components/growth-agent/GrowthAgentIdeaPanel";
 import { GrowthAgentProjectRow } from "@/components/growth-agent/GrowthAgentProjectRow";
 import { GrowthAgentTaskDrawer } from "@/components/growth-agent/GrowthAgentTaskDrawer";
+import { RemoveDayTasksDialog } from "@/components/growth-agent/RemoveDayTasksDialog";
 import { growthAgentDayNames } from "@/components/growth-agent/growthAgentTypes";
 import type {
   GrowthAgentDayKey,
@@ -155,6 +156,7 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
   const growthAgentDays = getGrowthAgentDays();
   const [selectedDay, setSelectedDay] = useState<GrowthAgentDayKey>(growthAgentToday);
   const [drawerContent, setDrawerContent] = useState<DrawerContent | null>(null);
+  const [removeDayTasksDialogOpen, setRemoveDayTasksDialogOpen] = useState(false);
   const [relativeNow, setRelativeNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -345,6 +347,9 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
 
   const pendingIdeas = ideas.filter((idea) => (ideaStatus[idea.id] ?? "pending") === "pending");
   const postponedIdeas = ideas.filter((idea) => (ideaStatus[idea.id] ?? "pending") === "postponed");
+  const activeIdeas = projects;
+  const hasIdeas =
+    pendingIdeas.length > 0 || postponedIdeas.length > 0 || activeIdeas.length > 0;
 
   function setCompleted({ entryId, completed }: { entryId: string; completed: boolean }) {
     setItemCompletedMutation.mutate({ productId, entryId, completed });
@@ -459,9 +464,24 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
         />
       </div>
 
-      <p className="mb-2.5 text-[12.5px] font-semibold tracking-[0.3px] text-[rgba(23,20,15,0.45)]">
-        {selectedDayLabel}
-      </p>
+      <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
+        <p className="text-[12.5px] font-semibold tracking-[0.3px] text-[rgba(23,20,15,0.45)]">
+          {selectedDayLabel}
+        </p>
+        {visibleItems.length > 0 ? (
+          <SignalButton
+            variant="tertiary"
+            size="sm"
+            disabled={isFeedBusy}
+            onClick={() => {
+              setRemoveDayTasksDialogOpen(true);
+            }}
+          >
+            <Trash2 className="size-[13px]" />
+            Remove all tasks
+          </SignalButton>
+        ) : null}
+      </div>
 
       <div className="mb-9 flex flex-col gap-2">
         {visibleItems.map((item, index) => (
@@ -489,10 +509,11 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
         IDEAS
       </p>
 
-      <div className="mb-9">
+      <div className="mb-9 flex flex-col gap-2">
         <GrowthAgentIdeaPanel
           pendingIdeas={pendingIdeas}
           postponedIdeas={postponedIdeas}
+          showEmptyState={!hasIdeas}
           onOpenIdea={(idea) => {
             setDrawerContent({ kind: "idea", idea });
           }}
@@ -509,20 +530,8 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
             updateIdeaStatus({ entryId, status: "pending" });
           }}
         />
-      </div>
 
-      <p className="mb-2.5 text-[12.5px] font-semibold tracking-[0.3px] text-[rgba(23,20,15,0.45)]">
-        ONGOING PROJECTS
-      </p>
-
-      <div className="flex flex-col gap-2">
-        {projects.length === 0 ? (
-          <p className="py-[18px] text-center text-[13.5px] text-[rgba(23,20,15,0.35)]">
-            No ongoing projects yet. Approve an idea to start one.
-          </p>
-        ) : null}
-
-        {projects.map((project) => (
+        {activeIdeas.map((project) => (
           <GrowthAgentProjectRow
             key={project.id}
             project={project}
@@ -564,6 +573,19 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
         onCancelIdea={(id) => {
           updateIdeaStatus({ entryId: id, status: "cancelled" });
           setDrawerContent(null);
+        }}
+      />
+
+      <RemoveDayTasksDialog
+        productId={productId}
+        dayKey={selectedDay}
+        taskCount={visibleItems.length}
+        open={removeDayTasksDialogOpen}
+        onOpenChange={setRemoveDayTasksDialogOpen}
+        onRemoved={() => {
+          if (drawerContent?.kind === "item" && drawerContent.item.day === selectedDay) {
+            setDrawerContent(null);
+          }
         }}
       />
 

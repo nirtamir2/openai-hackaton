@@ -3,6 +3,7 @@ export interface OnboardingWebsiteData {
   companyDescription: string;
   keyDifferentiators: string;
   competitors: string;
+  competitorWeaknesses: string;
   subreddits: string;
   searchKeywordsX: string;
   searchKeywordsGoogle: string;

@@ -182,7 +182,7 @@ export function TaskManagement({ productId }: Props) {
           <Button
             variant="outline"
             onClick={() => {
-              generateMutation.mutate({ productId, forToday: true });
+              generateMutation.mutate({ productId, forToday: true, taskCount: 3 });
             }}
             disabled={generateMutation.isPending}
           >
@@ -218,7 +218,7 @@ export function TaskManagement({ productId }: Props) {
               <Button
                 variant="outline"
                 onClick={() => {
-                  generateMutation.mutate({ productId, forToday: true });
+                  generateMutation.mutate({ productId, forToday: true, taskCount: 3 });
                 }}
                 disabled={generateMutation.isPending}
               >

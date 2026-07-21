@@ -113,6 +113,7 @@ function hasGeneratedWebsiteFields(data: OnboardingWebsiteData) {
     data.companyDescription.length > 0 ||
     data.keyDifferentiators.length > 0 ||
     data.competitors.length > 0 ||
+    data.competitorWeaknesses.length > 0 ||
     data.subreddits.length > 0 ||
     data.searchKeywordsX.length > 0 ||
     data.searchKeywordsGoogle.length > 0 ||
@@ -137,6 +138,7 @@ export function WebsiteInputStep({ data, onChange, onAnalysisComplete, onContinu
         companyDescription: analysis.companyDescription,
         keyDifferentiators: analysis.keyDifferentiators,
         competitors: analysis.competitors,
+        competitorWeaknesses: analysis.competitorWeaknesses,
         subreddits: analysis.subreddits,
         searchKeywordsX: analysis.searchKeywordsX,
         searchKeywordsGoogle: analysis.searchKeywordsGoogle,
@@ -236,6 +238,11 @@ export function WebsiteInputStep({ data, onChange, onAnalysisComplete, onContinu
           <ResultField label="What the company does" value={data.companyDescription} />
           <ResultField label="Key differentiators" value={data.keyDifferentiators} format="bullets" />
           <ResultField label="Competitors" value={data.competitors} format="tags" tagAccent="accent" />
+          <ResultField
+            label="Competitor weaknesses"
+            value={data.competitorWeaknesses}
+            format="bullets"
+          />
           <ResultField label="Relevant subreddits" value={data.subreddits} format="tags" tagAccent="reddit" />
           <ResultField label="Search keywords (X)" value={data.searchKeywordsX} format="tags" tagAccent="info" />
           <ResultField
@@ -340,6 +347,17 @@ export function WebsiteInputStep({ data, onChange, onAnalysisComplete, onContinu
               onChange({ ...data, competitors: value });
             }}
             rows={2}
+          />
+
+          <AiGeneratedField
+            id="competitor-weaknesses"
+            label="Competitor weaknesses"
+            value={data.competitorWeaknesses}
+            disabled={isAnalyzing}
+            onChange={(value) => {
+              onChange({ ...data, competitorWeaknesses: value });
+            }}
+            rows={3}
           />
 
           <AiGeneratedField

@@ -34,6 +34,10 @@ const websiteAnalysisSchema = z.object({
   competitors: z.string().min(1).max(300).meta({
     description: "Comma-separated list of the most relevant direct competitors.",
   }),
+  competitorWeaknesses: z.string().min(1).max(900).meta({
+    description:
+      "Exactly 3-4 comma-separated weaknesses of those competitors that this product can exploit in marketing. Each item should name a competitor and its weakness (about 8-20 words). Do not use commas inside individual items.",
+  }),
   subreddits: z.string().min(1).max(300).meta({
     description: "Comma-separated relevant subreddits with r/ prefixes.",
   }),
@@ -139,7 +143,7 @@ async function analyzeWebsiteWithJsonFallback({
       }),
       [
         "Return only a single JSON object with these exact keys:",
-        "companyDescription, keyDifferentiators, competitors, subreddits, searchKeywordsX, searchKeywordsGoogle, searchKeywordsSeo, targetMarketOptions, suggestedTargetMarkets, personalityOptions, suggestedPersonality.",
+        "companyDescription, keyDifferentiators, competitors, competitorWeaknesses, subreddits, searchKeywordsX, searchKeywordsGoogle, searchKeywordsSeo, targetMarketOptions, suggestedTargetMarkets, personalityOptions, suggestedPersonality.",
         "Do not include markdown fences or commentary.",
       ].join("\n"),
     ],

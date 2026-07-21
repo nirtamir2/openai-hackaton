@@ -4,11 +4,25 @@ import { z } from "zod";
 import { approveGrowthFeedIdea } from "../feed/approveGrowthFeedIdea";
 import { mapGrowthFeedEntries } from "../feed/mapGrowthFeedEntries";
 import { syncMarketingTasksToGrowthFeed } from "../feed/syncMarketingTasksToGrowthFeed";
+import {
+  clearMarketingTasksForDay,
+  type MarketingTaskDayKey,
+} from "../marketing/clearMarketingTasksForDay";
 import { publicProcedure } from "../index";
 
 const productIdSchema = z.object({
   productId: z.uuid(),
 });
+
+const dayKeySchema = z.enum([
+  "mon",
+  "tue",
+  "wed",
+  "thu",
+  "fri",
+  "sat",
+  "sun",
+] satisfies [MarketingTaskDayKey, ...Array<MarketingTaskDayKey>]);
 
 const entryReferenceSchema = z.object({
   productId: z.uuid(),
@@ -67,6 +81,14 @@ export const feedRouter = {
     }
 
     await syncMarketingTasksToGrowthFeed({ productId: input.productId });
+
+    await prisma.productGrowthFeedEntry.deleteMany({
+      where: {
+        productId: input.productId,
+        kind: GrowthFeedEntryKind.IDEA,
+        ideaStatus: GrowthIdeaStatus.APPROVED,
+      },
+    });
 
     const entries = await prisma.productGrowthFeedEntry.findMany({
       where: { productId: input.productId },
@@ -168,5 +190,17 @@ export const feedRouter = {
         todoId: input.todoId,
         done: input.done,
       };
+    }),
+  removeDayTasks: publicProcedure
+    .input(
+      productIdSchema.extend({
+        dayKey: dayKeySchema,
+      }),
+    )
+    .handler(async ({ input }) => {
+      return await clearMarketingTasksForDay({
+        productId: input.productId,
+        dayKey: input.dayKey,
+      });
     }),
 };

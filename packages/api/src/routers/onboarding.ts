@@ -8,6 +8,7 @@ const onboardingWebsiteSchema = z.object({
   companyDescription: z.string().trim().min(1).max(10_000),
   keyDifferentiators: z.string().trim().min(1).max(10_000),
   competitors: z.string().trim().min(1).max(10_000),
+  competitorWeaknesses: z.string().trim().min(1).max(10_000),
   subreddits: z.string().trim().min(1).max(10_000),
   searchKeywordsX: z.string().trim().min(1).max(10_000),
   searchKeywordsGoogle: z.string().trim().min(1).max(10_000),

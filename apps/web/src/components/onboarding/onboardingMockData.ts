@@ -7,6 +7,8 @@ export const mockWebsiteData = {
     "An AI conversation partner that helps you actually speak a new language, not just tap through vocab drills.",
   keyDifferentiators: "Real spoken conversation practice, live correction, no gamified streaks.",
   competitors: "Duolingo, Babbel, Busuu",
+  competitorWeaknesses:
+    "Duolingo focuses on gamified drills instead of real conversation, Babbel limits live speaking practice on lower tiers, Busuu relies on peer exchanges that are inconsistent for beginners",
   subreddits: "r/languagelearning, r/Spanish, r/duolingo, r/French",
   searchKeywordsX:
     "learn Spanish conversation, AI language tutor, speak French fluently, language practice app",
@@ -76,6 +78,7 @@ export function createEmptyWebsiteData() {
     companyDescription: "",
     keyDifferentiators: "",
     competitors: "",
+    competitorWeaknesses: "",
     subreddits: "",
     searchKeywordsX: "",
     searchKeywordsGoogle: "",

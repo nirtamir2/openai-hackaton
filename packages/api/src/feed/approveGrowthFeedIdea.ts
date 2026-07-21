@@ -1,6 +1,5 @@
 import prisma, {
   GrowthFeedEntryKind,
-  GrowthIdeaStatus,
   MarketingTaskContentType,
   MarketingTaskNetwork,
   MarketingTaskType,
@@ -58,6 +57,7 @@ function readTaskDraft(payload: Record<string, unknown>) {
   const description = readString(draft, "description");
   const contentType = readString(draft, "contentType");
   const network = readString(draft, "network");
+  const videoHook = readString(draft, "videoHook");
   const priority = readNumber(draft, "priority");
   const targetDate = readString(draft, "targetDate");
   const scheduledStart = readString(draft, "scheduledStart");
@@ -69,17 +69,18 @@ function readTaskDraft(payload: Record<string, unknown>) {
     description == null ||
     contentType == null ||
     network == null ||
+    videoHook == null ||
     priority == null ||
     targetDate == null ||
     scheduledStart == null ||
     scheduledEnd == null ||
-    subtasks.length < 2
+    subtasks.length < 4
   ) {
     return null;
   }
 
   if (
-    !Object.values(MarketingTaskContentType).includes(contentType as MarketingTaskContentType) ||
+    contentType !== MarketingTaskContentType.VIDEO ||
     !Object.values(MarketingTaskNetwork).includes(network as MarketingTaskNetwork)
   ) {
     return null;
@@ -89,6 +90,7 @@ function readTaskDraft(payload: Record<string, unknown>) {
     description,
     contentType: contentType as MarketingTaskContentType,
     network: network as MarketingTaskNetwork,
+    videoHook,
     subtasks,
     priority,
     targetDate: new Date(targetDate),
@@ -146,17 +148,12 @@ export async function approveGrowthFeedIdea({ productId, entryId }: Props) {
     trendId: taskDraft.trendId,
   });
 
-  await syncMarketingTaskToGrowthFeed(marketingTask);
+  await syncMarketingTaskToGrowthFeed(marketingTask, null, {
+    videoHook: taskDraft.videoHook,
+  });
 
-  await prisma.productGrowthFeedEntry.update({
+  await prisma.productGrowthFeedEntry.delete({
     where: { id: entry.id },
-    data: {
-      ideaStatus: GrowthIdeaStatus.APPROVED,
-      payload: {
-        ...entry.payload,
-        marketingTaskId: marketingTask.id,
-      },
-    },
   });
 
   return { marketingTaskId: marketingTask.id };

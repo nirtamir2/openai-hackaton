@@ -1,8 +1,9 @@
 import type { RouterClient } from "@orpc/server";
 import { ORPCError } from "@orpc/server";
 import { z } from "zod";
+import type { GeneratedMarketingTask } from "@app-template/ai";
 import { generateMarketingTasks } from "@app-template/ai";
-import prisma, { MarketingTaskType } from "@app-template/db";
+import prisma, { MarketingTaskContentType, MarketingTaskType } from "@app-template/db";
 import { publicProcedure } from "../index";
 import { createGrowthFeedIdea } from "../feed/createGrowthFeedIdea";
 import { syncMarketingTaskToGrowthFeed } from "../feed/syncMarketingTasksToGrowthFeed";
@@ -13,6 +14,15 @@ import { calendarRouter } from "./calendar";
 import { feedRouter } from "./feed";
 import { onboardingRouter } from "./onboarding";
 import { sentimentRouter } from "./sentiment";
+
+function isVideoIdeaTask(task: GeneratedMarketingTask) {
+  return (
+    task.taskType === MarketingTaskType.LONG &&
+    task.contentType === MarketingTaskContentType.VIDEO &&
+    task.videoHook != null &&
+    task.videoHook.length >= 10
+  );
+}
 
 export const appRouter = {
   healthCheck: publicProcedure.handler(() => {
@@ -63,69 +73,7 @@ export const appRouter = {
         throw new ORPCError("NOT_FOUND");
       }
 
-      const generatedTasks = await generateMarketingTasks({
-        context: {
-          product: marketSentiment.product,
-          marketingProfile: marketSentiment.marketingProfile,
-          marketingTasks: marketSentiment.marketingTasks,
-          sentiments: marketSentiment.sentiments,
-          trend:
-            trend == null
-              ? null
-              : {
-                  source: trend.source,
-                  type: trend.type,
-                  description: trend.description,
-                  popularExamples: trend.popularExamples,
-                },
-        },
-        taskCount: input.taskCount,
-        forToday: input.forToday,
-      });
-
-      let longTasks = generatedTasks.filter(
-        (task) => task.taskType === MarketingTaskType.LONG,
-      );
-
-      if (longTasks.length === 0) {
-        const ideaTasks = await generateMarketingTasks({
-          context: {
-            product: marketSentiment.product,
-            marketingProfile: marketSentiment.marketingProfile,
-            marketingTasks: marketSentiment.marketingTasks,
-            sentiments: marketSentiment.sentiments,
-            trend:
-              trend == null
-                ? null
-                : {
-                    source: trend.source,
-                    type: trend.type,
-                    description: trend.description,
-                    popularExamples: trend.popularExamples,
-                  },
-          },
-          taskCount: 1,
-          forToday: false,
-        });
-
-        longTasks = ideaTasks.filter((task) => task.taskType === MarketingTaskType.LONG);
-      }
-
-      const shortTasks = generatedTasks.filter(
-        (task) => task.taskType === MarketingTaskType.SHORT,
-      );
-
-      const marketingTasks = await Promise.all(
-        shortTasks.map(async (task) =>
-          createProductMarketingTask({
-            ...task,
-            productId: marketSentiment.product.id,
-            trendId: input.trendId ?? null,
-          }),
-        ),
-      );
-
-      const draftContext = {
+      const generationContext = {
         product: marketSentiment.product,
         marketingProfile: marketSentiment.marketingProfile,
         marketingTasks: marketSentiment.marketingTasks,
@@ -141,8 +89,56 @@ export const appRouter = {
               },
       };
 
+      const [generatedTasks, ideaTasks] = await Promise.all([
+        generateMarketingTasks({
+          context: generationContext,
+          taskCount: input.taskCount,
+          forToday: input.forToday,
+        }),
+        generateMarketingTasks({
+          context: generationContext,
+          taskCount: input.taskCount,
+          forIdea: true,
+        }),
+      ]);
+
+      const shortTasks = generatedTasks.filter(
+        (task) => task.taskType === MarketingTaskType.SHORT,
+      );
+      const longTasks = ideaTasks.filter((task) => isVideoIdeaTask(task));
+
+      if (shortTasks.length !== input.taskCount) {
+        throw new ORPCError("INTERNAL_SERVER_ERROR", {
+          message: `Expected ${String(input.taskCount)} tasks but generated ${String(shortTasks.length)}.`,
+        });
+      }
+
+      if (longTasks.length !== input.taskCount) {
+        throw new ORPCError("INTERNAL_SERVER_ERROR", {
+          message: `Expected ${String(input.taskCount)} ideas but generated ${String(longTasks.length)}.`,
+        });
+      }
+
+      const marketingTasks = await Promise.all(
+        shortTasks.map(async (task) =>
+          createProductMarketingTask({
+            productId: marketSentiment.product.id,
+            description: task.description,
+            taskType: task.taskType,
+            contentType: task.contentType,
+            network: task.network,
+            subtasks: task.subtasks,
+            priority: task.priority,
+            targetDate: task.targetDate,
+            scheduledStart: task.scheduledStart,
+            scheduledEnd: task.scheduledEnd,
+            trendId: input.trendId ?? null,
+          }),
+        ),
+      );
+
       await Promise.all(
-        marketingTasks.map(async (task) => syncMarketingTaskToGrowthFeed(task, draftContext)),
+        marketingTasks.map(async (task) => syncMarketingTaskToGrowthFeed(task, generationContext)),
       );
 
       const ideas = await Promise.all(
@@ -150,7 +146,15 @@ export const appRouter = {
           createGrowthFeedIdea({
             productId: marketSentiment.product.id,
             task: {
-              ...task,
+              description: task.description,
+              contentType: task.contentType,
+              network: task.network,
+              videoHook: task.videoHook ?? "",
+              subtasks: task.subtasks,
+              priority: task.priority,
+              targetDate: task.targetDate,
+              scheduledStart: task.scheduledStart,
+              scheduledEnd: task.scheduledEnd,
               trendId: input.trendId ?? null,
             },
           }),

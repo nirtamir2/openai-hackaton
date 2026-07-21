@@ -22,7 +22,7 @@ const skeletonRowCount = 6;
 const generationSteps = [
   "Reading product sentiment signals",
   "Matching tasks to your marketing channels",
-  "Balancing short wins and ongoing projects",
+  "Balancing short wins and ideas",
   "Scheduling tasks across today",
   "Ranking by expected impact",
   "Finalizing your task list",

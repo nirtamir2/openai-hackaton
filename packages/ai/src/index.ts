@@ -19,6 +19,7 @@ export interface MarketingTaskGenerationContext {
     plusSides: string;
     minusSides: string;
     mainCompetitors: string;
+    competitorWeaknesses: string;
   };
   marketingProfile: {
     websiteUrl: string;
@@ -62,6 +63,7 @@ export interface GeneratedMarketingTask {
   taskType: MarketingTaskType;
   contentType: MarketingTaskContentType;
   network: MarketingTaskNetwork;
+  videoHook: string | null;
   subtasks: Array<{ id: string; text: string; done: boolean }>;
   priority: number;
   targetDate: Date;
@@ -73,6 +75,7 @@ interface GenerateMarketingTasksProps {
   context: MarketingTaskGenerationContext;
   taskCount: 1 | 3;
   forToday?: boolean;
+  forIdea?: boolean;
 }
 
 export const marketingTaskDescriptionMaxLength = 2_000;
@@ -93,7 +96,8 @@ const marketingTaskSchema = z.object({
       "SHORT for a focused task completed within 14 days; LONG for a multi-step ongoing project requiring more than 14 days.",
   }),
   contentType: z.enum(MarketingTaskContentType).meta({
-    description: "The deliverable format: reply, post, video, or image.",
+    description:
+      "The deliverable format: reply (short, snappy community response), post, video, or image.",
   }),
   network: z.enum(MarketingTaskNetwork).meta({
     description: "The social network where the task will be executed: x, reddit, linkedin, or youtube.",
@@ -108,6 +112,10 @@ const marketingTaskSchema = z.object({
   targetDate: z.iso.date().meta({
     description: "A future target date in YYYY-MM-DD format, no more than 90 days from today.",
   }),
+  videoHook: z.string().min(10).max(120).optional().meta({
+    description:
+      "Required for LONG tasks: a punchy opening hook for the video — the line viewers hear or see in the first 3 seconds. For video ideas, dramatize a competitor weakness or the viewer's frustration with it.",
+  }),
 });
 
 function buildMarketingTaskPlanSchema({ taskCount }: { taskCount: 1 | 3 }) {
@@ -116,7 +124,17 @@ function buildMarketingTaskPlanSchema({ taskCount }: { taskCount: 1 | 3 }) {
   });
 }
 
-function getMarketingTaskOutputTokenLimit({ taskCount }: { taskCount: 1 | 3 }) {
+function getMarketingTaskOutputTokenLimit({
+  taskCount,
+  forIdea = false,
+}: {
+  taskCount: 1 | 3;
+  forIdea?: boolean;
+}) {
+  if (forIdea && taskCount === 3) {
+    return 10_000;
+  }
+
   return taskCount === 1 ? 3_000 : 5_000;
 }
 
@@ -189,6 +207,26 @@ function getLatestTargetDate({ today }: { today: string }) {
   return latestTargetDate;
 }
 
+function getEarliestLongTargetDate({ today }: { today: string }) {
+  const earliestTargetDate = new Date(`${today}T09:00:00.000Z`);
+  earliestTargetDate.setUTCDate(earliestTargetDate.getUTCDate() + 21);
+  return earliestTargetDate;
+}
+
+function getLongTaskSchedule({ targetDate }: { targetDate: Date }) {
+  const scheduledStart = new Date();
+  scheduledStart.setHours(0, 0, 0, 0);
+
+  const scheduledEnd = new Date(targetDate);
+  scheduledEnd.setHours(23, 59, 59, 999);
+
+  if (scheduledEnd.getTime() <= scheduledStart.getTime()) {
+    scheduledEnd.setTime(scheduledStart.getTime() + 21 * 24 * 60 * 60 * 1000);
+  }
+
+  return { scheduledStart, scheduledEnd };
+}
+
 function isDuplicateDescription({
   description,
   descriptions,
@@ -228,11 +266,21 @@ function buildMarketingChannelInstructions({
   ].join("\n");
 }
 
+function buildVideoIdeaCompetitorInstructions() {
+  return [
+    "The video concept must exploit a specific weakness of a named competitor from mainCompetitors.",
+    "Use documented competitorWeaknesses from the product context when available. If competitorWeaknesses is empty, infer plausible weaknesses only from product strengths, competitor names, and customer sentiment — never invent unverifiable claims.",
+    "The description must name the target competitor, state which weakness the video addresses, and show how the product's strengths solve that pain.",
+    "videoHook must dramatize the competitor weakness or the viewer's frustration with it in the first 3 seconds.",
+  ].join(" ");
+}
+
 function buildMarketingTaskSystemPrompt({
   context,
   taskCount,
   today,
   forToday = false,
+  forIdea = false,
 }: GenerateMarketingTasksProps & { today: string }) {
   const trendInstructions =
     context.trend == null
@@ -292,20 +340,37 @@ function buildMarketingTaskSystemPrompt({
     "Do not suggest building product features, fixing bugs, changing pricing systems, or improving onboarding flows unless the deliverable is a marketing asset about that topic.",
     "Do not include customer names, URLs, or quotes that could identify a customer in a task description.",
     "Do not duplicate or restate an active marketing task from the context.",
-    "Use taskType SHORT for a focused task that can be completed within 14 days. Use LONG for a multi-step ongoing project that requires more than 14 days.",
+    "Use taskType SHORT for a focused task that can be completed within 14 days.",
+    "LONG tasks are multi-week video production projects (typically 3-8 weeks): concept, script, filming, editing, and publishing. They must use contentType video and network youtube or linkedin.",
+    "Every LONG task must include videoHook: a punchy opening line for the video — what viewers hear or see in the first 3 seconds. Put the hook in videoHook, not only in the description.",
+    "LONG video ideas must be competitive positioning videos that exploit competitor weaknesses. " +
+      buildVideoIdeaCompetitorInstructions(),
+    "For LONG tasks, include 4-6 subtasks covering the full video production pipeline. For SHORT tasks, subtasks must be an empty array and videoHook must be omitted.",
     "Set contentType to reply, post, video, or image based on the deliverable format.",
+    "When contentType is reply, the task must be a quick community response completable in minutes. The drafted reply will be short and snappy (1-3 sentences), not a long-form comment or essay.",
     "Set network to x, reddit, linkedin, or youtube based on where the task will be executed.",
-    "For LONG tasks, include 2-6 subtasks with concrete action steps. For SHORT tasks, subtasks must be an empty array.",
     "Set priority as an integer from 1 to 5, where 1 is most urgent and 5 is least urgent.",
-    forToday
-      ? taskCount === 1
-        ? `Today's date is ${today}. Generate 1 SHORT task with targetDate exactly ${today}, completable in a single focused work session today.`
-        : [
-            `Today's date is ${today}.`,
-            `Generate ${String(taskCount - 1)} SHORT tasks with targetDate exactly ${today}. Each SHORT task must be completable in a single focused work session today.`,
-            "Also generate exactly 1 LONG task as a multi-step project idea. LONG tasks may use a future targetDate up to 90 days from today.",
-          ].join(" ")
-      : `Today's date is ${today}. Each targetDate must be a future calendar date in YYYY-MM-DD format, no more than 90 days from today.`,
+    forIdea
+      ? [
+          `Today's date is ${today}.`,
+          taskCount === 1
+            ? "Generate exactly 1 LONG video production project idea."
+            : `Generate exactly ${String(taskCount)} distinct LONG video production project ideas. Each idea must explore a different angle, audience segment, or channel (youtube vs linkedin).`,
+          "Every task must have taskType LONG.",
+          "contentType must be video. network must be youtube or linkedin.",
+          "targetDate must be 21-90 days from today.",
+          "videoHook is required on every idea.",
+          buildVideoIdeaCompetitorInstructions(),
+        ].join(" ")
+      : forToday
+        ? taskCount === 1
+          ? `Today's date is ${today}. Generate 1 SHORT task with targetDate exactly ${today}, completable in a single focused work session today. All tasks must have taskType SHORT.`
+          : [
+              `Today's date is ${today}.`,
+              `Generate exactly ${String(taskCount)} SHORT tasks with targetDate exactly ${today}. Each SHORT task must be completable in a single focused work session today.`,
+              "All tasks must have taskType SHORT. Do not generate any LONG tasks.",
+            ].join(" ")
+        : `Today's date is ${today}. Each targetDate must be a future calendar date in YYYY-MM-DD format, no more than 90 days from today.`,
     "Return only the structured task plan requested by the output schema.",
     "",
     "Marketing profile:",
@@ -321,10 +386,13 @@ async function generateMarketingTasksWithStructuredOutput({
   taskCount,
   today,
   forToday = false,
+  forIdea = false,
 }: GenerateMarketingTasksProps & { today: string }) {
   return await chat({
     adapter: createOpenaiChat("gpt-5-mini", env.OPENAI_API_KEY),
-    systemPrompts: [buildMarketingTaskSystemPrompt({ context, taskCount, today, forToday })],
+    systemPrompts: [
+      buildMarketingTaskSystemPrompt({ context, taskCount, today, forToday, forIdea }),
+    ],
     messages: [
       {
         role: "user",
@@ -333,7 +401,7 @@ async function generateMarketingTasksWithStructuredOutput({
     ],
     outputSchema: buildMarketingTaskPlanSchema({ taskCount }),
     modelOptions: {
-      max_output_tokens: getMarketingTaskOutputTokenLimit({ taskCount }),
+      max_output_tokens: getMarketingTaskOutputTokenLimit({ taskCount, forIdea }),
     },
   });
 }
@@ -343,14 +411,15 @@ async function generateMarketingTasksWithJsonFallback({
   taskCount,
   today,
   forToday = false,
+  forIdea = false,
 }: GenerateMarketingTasksProps & { today: string }) {
   const responseText = await chat({
     adapter: createOpenaiChat("gpt-5-mini", env.OPENAI_API_KEY),
     systemPrompts: [
-      buildMarketingTaskSystemPrompt({ context, taskCount, today, forToday }),
+      buildMarketingTaskSystemPrompt({ context, taskCount, today, forToday, forIdea }),
       [
         `Return only a single JSON object with a "tasks" array containing exactly ${String(taskCount)} task object${taskCount === 1 ? "" : "s"}.`,
-        "Each task must include description, taskType, contentType, network, subtasks, priority, and targetDate.",
+        "Each task must include description, taskType, contentType, network, subtasks, priority, targetDate, and videoHook when taskType is LONG.",
         "Do not include markdown fences or commentary.",
       ].join("\n"),
     ],
@@ -362,7 +431,7 @@ async function generateMarketingTasksWithJsonFallback({
     ],
     stream: false,
     modelOptions: {
-      max_output_tokens: getMarketingTaskOutputTokenLimit({ taskCount }),
+      max_output_tokens: getMarketingTaskOutputTokenLimit({ taskCount, forIdea }),
     },
   });
 
@@ -392,13 +461,26 @@ function createGeneratedSubtasks({
 
 function isValidGeneratedTask(task: {
   taskType: MarketingTaskType;
+  contentType: MarketingTaskContentType;
+  network: MarketingTaskNetwork;
   subtasks: Array<{ text: string }>;
+  videoHook?: string;
 }) {
   if (task.taskType === MarketingTaskType.LONG) {
-    return task.subtasks.length >= 2;
+    const videoHook = task.videoHook?.trim() ?? "";
+    const isVideoNetwork =
+      task.network === MarketingTaskNetwork.YOUTUBE ||
+      task.network === MarketingTaskNetwork.LINKEDIN;
+
+    return (
+      task.contentType === MarketingTaskContentType.VIDEO &&
+      isVideoNetwork &&
+      videoHook.length >= 10 &&
+      task.subtasks.length >= 4
+    );
   }
 
-  return task.subtasks.length === 0;
+  return task.subtasks.length === 0 && task.videoHook == null;
 }
 
 const redditReplyDraftSchema = z.object({
@@ -406,9 +488,9 @@ const redditReplyDraftSchema = z.object({
     description:
       "A realistic fictional Reddit post or comment the product owner would reply to. Do not use real usernames or URLs.",
   }),
-  reply: z.string().min(20).max(2_000).meta({
+  reply: z.string().min(10).max(400).meta({
     description:
-      "A ready-to-post Reddit reply that is helpful, authentic, and aligned with the brand voice.",
+      "A short, snappy ready-to-post Reddit reply (1-3 sentences). Helpful, authentic, and aligned with the brand voice. No walls of text, preamble, or sign-offs.",
   }),
 });
 
@@ -481,8 +563,11 @@ function buildMarketingTaskDraftSystemPrompt({
     "Do not include real customer names, real URLs, or identifiable customer quotes.",
     `Task description: ${description}`,
     `Deliverable format: ${contentType}`,
+    contentType === MarketingTaskContentType.REPLY
+      ? "Reply copy must be short and snappy: 1-3 sentences, conversational, and ready to post without editing. No preamble, sign-offs, or walls of text."
+      : null,
     `Target network: ${network}`,
-  marketingProfileSummary.length > 0 ? `Marketing profile:\n${marketingProfileSummary}` : null,
+    marketingProfileSummary.length > 0 ? `Marketing profile:\n${marketingProfileSummary}` : null,
     "Task-generation context:",
     JSON.stringify({
       product: context.product,
@@ -494,6 +579,56 @@ function buildMarketingTaskDraftSystemPrompt({
     .join("\n");
 }
 
+async function chatWithStructuredOutputFallback<T>({
+  systemPrompt,
+  userMessage,
+  schema,
+  maxOutputTokens,
+}: {
+  systemPrompt: string;
+  userMessage: string;
+  schema: z.ZodSchema<T>;
+  maxOutputTokens: number;
+}): Promise<T> {
+  try {
+    return (await chat({
+      adapter: createOpenaiChat("gpt-5-mini", env.OPENAI_API_KEY),
+      systemPrompts: [systemPrompt],
+      messages: [
+        {
+          role: "user",
+          content: userMessage,
+        },
+      ],
+      outputSchema: schema,
+      modelOptions: {
+        max_output_tokens: maxOutputTokens,
+      },
+    })) as T;
+  } catch {
+    const responseText = await chat({
+      adapter: createOpenaiChat("gpt-5-mini", env.OPENAI_API_KEY),
+      systemPrompts: [
+        systemPrompt,
+        "Return only a single JSON object with the requested fields. Do not include markdown fences or commentary.",
+      ],
+      messages: [
+        {
+          role: "user",
+          content: userMessage,
+        },
+      ],
+      stream: false,
+      modelOptions: {
+        max_output_tokens: maxOutputTokens,
+      },
+    });
+
+    const parsedJson = extractJsonObject({ text: responseText });
+    return schema.parse(parsedJson);
+  }
+}
+
 export async function generateMarketingTaskDraftContent(
   input: MarketingTaskDraftGenerationInput,
 ): Promise<MarketingTaskDraftContent> {
@@ -503,20 +638,12 @@ export async function generateMarketingTaskDraftContent(
     input.contentType === MarketingTaskContentType.REPLY &&
     input.network === MarketingTaskNetwork.REDDIT
   ) {
-    const result = await chat({
-      adapter: createOpenaiChat("gpt-5-mini", env.OPENAI_API_KEY),
-      systemPrompts: [systemPrompt],
-      messages: [
-        {
-          role: "user",
-          content:
-            "Write a fictional Reddit thread excerpt and a ready-to-post reply for this task.",
-        },
-      ],
-      outputSchema: redditReplyDraftSchema,
-      modelOptions: {
-        max_output_tokens: 2_000,
-      },
+    const result = await chatWithStructuredOutputFallback({
+      systemPrompt,
+      userMessage:
+        "Write a fictional Reddit thread excerpt and a short, snappy ready-to-post reply (1-3 sentences) for this task.",
+      schema: redditReplyDraftSchema,
+      maxOutputTokens: 800,
     });
 
     return {
@@ -526,19 +653,11 @@ export async function generateMarketingTaskDraftContent(
   }
 
   if (input.contentType === MarketingTaskContentType.VIDEO) {
-    const result = await chat({
-      adapter: createOpenaiChat("gpt-5-mini", env.OPENAI_API_KEY),
-      systemPrompts: [systemPrompt],
-      messages: [
-        {
-          role: "user",
-          content: "Write ad creative details for this video marketing task.",
-        },
-      ],
-      outputSchema: videoAdDraftSchema,
-      modelOptions: {
-        max_output_tokens: 1_500,
-      },
+    const result = await chatWithStructuredOutputFallback({
+      systemPrompt,
+      userMessage: "Write ad creative details for this video marketing task.",
+      schema: videoAdDraftSchema,
+      maxOutputTokens: 1_500,
     });
 
     return {
@@ -551,19 +670,11 @@ export async function generateMarketingTaskDraftContent(
     };
   }
 
-  const result = await chat({
-    adapter: createOpenaiChat("gpt-5-mini", env.OPENAI_API_KEY),
-    systemPrompts: [systemPrompt],
-    messages: [
-      {
-        role: "user",
-        content: "Write ready-to-publish post copy for this task.",
-      },
-    ],
-    outputSchema: postDraftSchema,
-    modelOptions: {
-      max_output_tokens: 1_500,
-    },
+  const result = await chatWithStructuredOutputFallback({
+    systemPrompt,
+    userMessage: "Write ready-to-publish post copy for this task.",
+    schema: postDraftSchema,
+    maxOutputTokens: 1_500,
   });
 
   return {
@@ -575,9 +686,11 @@ export async function generateMarketingTasks({
   context,
   taskCount,
   forToday = false,
+  forIdea = false,
 }: GenerateMarketingTasksProps): Promise<GeneratedMarketingTask[]> {
   const today = forToday ? getLocalTodayString() : getToday();
   const latestTargetDate = getLatestTargetDate({ today });
+  const earliestLongTargetDate = getEarliestLongTargetDate({ today });
   let generatedPlan;
 
   try {
@@ -586,6 +699,7 @@ export async function generateMarketingTasks({
       taskCount,
       today,
       forToday,
+      forIdea,
     });
   } catch {
     generatedPlan = await generateMarketingTasksWithJsonFallback({
@@ -593,6 +707,7 @@ export async function generateMarketingTasks({
       taskCount,
       today,
       forToday,
+      forIdea,
     });
   }
 
@@ -604,12 +719,15 @@ export async function generateMarketingTasks({
 
   return generatedPlan.tasks.map((task) => {
     const description = task.description.trim();
+    const videoHook =
+      task.taskType === MarketingTaskType.LONG ? (task.videoHook?.trim() ?? null) : null;
     const targetDate = new Date(`${task.targetDate}T09:00:00.000Z`);
-    const hasInvalidTargetDate = forToday
-      ? task.taskType === MarketingTaskType.SHORT
-        ? task.targetDate !== today
-        : task.targetDate <= today || targetDate > latestTargetDate
-      : task.targetDate <= today || targetDate > latestTargetDate;
+    const hasInvalidTargetDate =
+      task.taskType === MarketingTaskType.LONG
+        ? targetDate < earliestLongTargetDate || targetDate > latestTargetDate
+        : forToday
+          ? task.targetDate !== today
+          : task.targetDate <= today || targetDate > latestTargetDate;
 
     if (
       description.length === 0 ||
@@ -629,12 +747,30 @@ export async function generateMarketingTasks({
       subtasks: task.subtasks,
     });
 
+    if (task.taskType === MarketingTaskType.LONG) {
+      const longSchedule = getLongTaskSchedule({ targetDate });
+
+      return {
+        description,
+        taskType: task.taskType,
+        contentType: task.contentType,
+        network: task.network,
+        videoHook,
+        subtasks,
+        priority: task.priority,
+        targetDate,
+        scheduledStart: longSchedule.scheduledStart,
+        scheduledEnd: longSchedule.scheduledEnd,
+      };
+    }
+
     if (todaySchedule != null) {
       return {
         description,
         taskType: task.taskType,
         contentType: task.contentType,
         network: task.network,
+        videoHook: null,
         subtasks,
         priority: task.priority,
         targetDate: todaySchedule.targetDate,
@@ -648,6 +784,7 @@ export async function generateMarketingTasks({
       taskType: task.taskType,
       contentType: task.contentType,
       network: task.network,
+      videoHook: null,
       subtasks,
       priority: task.priority,
       targetDate,

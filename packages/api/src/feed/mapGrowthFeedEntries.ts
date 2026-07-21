@@ -407,6 +407,10 @@ export function mapGrowthFeedEntries(
     }
 
     if (entry.kind === GrowthFeedEntryKind.IDEA) {
+      if (entry.ideaStatus === GrowthIdeaStatus.APPROVED) {
+        continue;
+      }
+
       const idea = mapIdea({
         entry,
         payload: entry.payload,
