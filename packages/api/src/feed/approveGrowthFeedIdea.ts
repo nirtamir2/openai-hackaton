@@ -134,9 +134,11 @@ export async function approveGrowthFeedIdea({ productId, entryId }: Props) {
     throw new ORPCError("BAD_REQUEST", { message: "Idea is missing task details." });
   }
 
+  const ideaTitle = readString(entry.payload, "title") ?? taskDraft.videoHook;
+
   const marketingTask = await createProductMarketingTask({
     productId,
-    title: taskDraft.videoHook,
+    title: ideaTitle,
     description: taskDraft.description,
     taskType: MarketingTaskType.LONG,
     contentType: taskDraft.contentType,

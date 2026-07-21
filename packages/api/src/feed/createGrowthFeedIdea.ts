@@ -4,9 +4,10 @@ import type {
   MarketingTaskNetwork,
 } from "@app-template/db";
 import { buildIdeaDescription } from "../marketing/buildIdeaDescription";
-import { buildTaskPreviewTitle } from "../marketing/buildTaskPreviewTitle";
+import { normalizeMarketingTaskDescription, normalizeMarketingTaskTitle } from "@app-template/ai";
 
 interface TaskDraft {
+  title: string;
   description: string;
   contentType: MarketingTaskContentType;
   network: MarketingTaskNetwork;
@@ -25,12 +26,15 @@ interface Props {
 }
 
 export async function createGrowthFeedIdea({ productId, task }: Props) {
-  const description = task.description.trim();
+  const description = normalizeMarketingTaskDescription({ description: task.description });
   const videoHook = task.videoHook.trim();
+  const title = normalizeMarketingTaskTitle({
+    title: task.title.length > 0 ? task.title : videoHook,
+  });
   const externalId = `idea-${crypto.randomUUID()}`;
 
   const payload = {
-    title: buildTaskPreviewTitle({ description: videoHook }),
+    title,
     meta: `Meta video ad · Priority ${String(task.priority)}`,
     description: buildIdeaDescription({ description }),
     videoHook,

@@ -14,6 +14,7 @@ import {
 
 interface Props {
   variant: "initial" | "generating";
+  etaLabel: string | null;
 }
 
 const stepAdvanceMs = 1_600;
@@ -78,7 +79,7 @@ function TaskListLoadingRow({ index }: { index: number }) {
   );
 }
 
-export function TaskListLoading({ variant }: Props) {
+export function TaskListLoading({ variant, etaLabel }: Props) {
   const [activeStepIndex, setActiveStepIndex] = useState(0);
 
   useEffect(() => {
@@ -109,7 +110,9 @@ export function TaskListLoading({ variant }: Props) {
   const title = variant === "generating" ? "Generating today's tasks" : "Loading your tasks";
   const description =
     variant === "generating"
-      ? "Building a focused set of marketing moves from your product data."
+      ? etaLabel == null
+        ? "Building a focused set of marketing moves from your product data."
+        : `Building a focused set of marketing moves from your product data. Est. ${etaLabel} left.`
       : "Fetching your scheduled marketing tasks.";
 
   return (
@@ -149,7 +152,12 @@ export function TaskListLoading({ variant }: Props) {
               <div className="flex w-full max-w-md flex-col gap-2">
                 <div className="flex items-center justify-between text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
                   <span>Progress</span>
-                  <span>{progressPercent}%</span>
+                  <span>
+                    {variant === "generating" && etaLabel != null ? (
+                      <span className="normal-case tracking-normal">Est. {etaLabel} left · </span>
+                    ) : null}
+                    {progressPercent}%
+                  </span>
                 </div>
                 <div className="h-1.5 overflow-hidden rounded-full bg-muted">
                   <div

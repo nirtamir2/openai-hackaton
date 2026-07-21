@@ -20,6 +20,7 @@ import type {
 import { getGrowthAgentDays, getGrowthAgentToday } from "@/components/growth-agent/growthAgentWeek";
 import { SignalButton } from "@/components/home/SignalButton";
 import { Skeleton } from "@/components/ui/Skeleton";
+import { useGenerationEta, estimatedTaskGenerationDurationMs } from "@/hooks/useGenerationEta";
 import { getOrpcErrorMessage } from "@/utils/getOrpcErrorMessage";
 import { formatRelativeTime } from "@/utils/formatRelativeTime";
 import {
@@ -181,7 +182,13 @@ function GrowthAgentFeedTaskSkeletonRow({ index }: { index: number }) {
   );
 }
 
-function GrowthAgentFeedLoadingSkeleton({ variant }: { variant: "initial" | "generating" }) {
+function GrowthAgentFeedLoadingSkeleton({
+  variant,
+  etaLabel,
+}: {
+  variant: "initial" | "generating";
+  etaLabel: string | null;
+}) {
   const rowCount = variant === "generating" ? 3 : 4;
 
   return (
@@ -197,7 +204,9 @@ function GrowthAgentFeedLoadingSkeleton({ variant }: { variant: "initial" | "gen
           <div className="flex min-w-0 flex-col gap-1">
             <p className="text-[14.5px] font-medium text-[#17140f]">Generating today&apos;s tasks</p>
             <p className="text-[12.5px] text-[rgba(23,20,15,0.55)]">
-              Building a focused set of marketing moves from your product data.
+              {etaLabel == null
+                ? "Building a focused set of marketing moves from your product data."
+                : `Building a focused set of marketing moves from your product data. Est. ${etaLabel} left.`}
             </p>
           </div>
         </div>
@@ -304,6 +313,10 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
     generateIdeasMutation.isPending || pendingIdeaGenerations.length > 0;
 
   const isFeedBusy = isGeneratingTasks || isGeneratingIdeas;
+  const taskGenerationEta = useGenerationEta({
+    estimatedDurationMs: estimatedTaskGenerationDurationMs,
+    isComplete: !isGeneratingTasks,
+  });
 
   const setItemCompletedMutation = useMutation(
     orpc.feed.setItemCompleted.mutationOptions({
@@ -522,7 +535,7 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
               {selectedDayLabel}
             </p>
           </div>
-          <GrowthAgentFeedLoadingSkeleton variant="initial" />
+          <GrowthAgentFeedLoadingSkeleton variant="initial" etaLabel={null} />
         </div>
       ) : null}
 
@@ -576,7 +589,9 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
             }}
           >
             <Sparkles className="size-[13px]" />
-            {isGeneratingTasks ? "Generating..." : "Generate today's tasks"}
+            {isGeneratingTasks
+              ? `Generating · Est. ${taskGenerationEta.label} left`
+              : "Generate today's tasks"}
           </SignalButton>
           {visibleItems.length > 0 ? (
             <SignalButton
@@ -596,7 +611,7 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
 
       <div className="mb-9 flex flex-col gap-2">
         {isGeneratingTasks ? (
-          <GrowthAgentFeedLoadingSkeleton variant="generating" />
+          <GrowthAgentFeedLoadingSkeleton variant="generating" etaLabel={taskGenerationEta.label} />
         ) : null}
         {!isGeneratingTasks
           ? visibleItems.map((item, index) => (
@@ -724,10 +739,16 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
         productId={productId}
         dayKey={selectedDay}
         taskCount={visibleItems.length}
+        ideaCount={pendingIdeas.length + postponedIdeas.length + activeIdeas.length}
         open={removeDayTasksDialogOpen}
         onOpenChange={setRemoveDayTasksDialogOpen}
         onRemoved={() => {
           if (drawerContent?.kind === "item" && drawerContent.item.day === selectedDay) {
+            setDrawerContent(null);
+            return;
+          }
+
+          if (drawerContent?.kind === "idea" || drawerContent?.kind === "project") {
             setDrawerContent(null);
           }
         }}

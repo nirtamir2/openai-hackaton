@@ -265,8 +265,17 @@ function ItemDrawerBody({
   return (
     <>
       <TaskPreviewSection delayMs={60}>
+        <p className="mb-1 text-[17px] font-semibold text-[rgba(23,20,15,0.9)]">{item.title}</p>
         <p className="mb-4 text-[12.5px] text-[rgba(23,20,15,0.45)]">{item.meta}</p>
       </TaskPreviewSection>
+
+      {taskDescription != null && taskDescription !== item.title ? (
+        <TaskPreviewSection delayMs={90}>
+          <p className="mb-5 line-clamp-2 text-[15px] leading-[1.6] whitespace-pre-line text-[rgba(23,20,15,0.85)]">
+            {taskDescription}
+          </p>
+        </TaskPreviewSection>
+      ) : null}
 
       {item.why != null && item.why !== taskDescription ? (
         <TaskPreviewSection delayMs={120}>
@@ -371,15 +380,8 @@ function ItemDrawerBody({
 
       {item.type === "post" ? (
         <>
-          {taskDescription != null ? (
-            <TaskPreviewSection delayMs={120}>
-              <p className="mb-5 text-[15px] leading-[1.6] whitespace-pre-line text-[rgba(23,20,15,0.85)]">
-                {taskDescription}
-              </p>
-            </TaskPreviewSection>
-          ) : null}
           {item.draftBody != null ? (
-            <TaskPreviewSection delayMs={taskDescription != null ? 180 : 120}>
+            <TaskPreviewSection delayMs={120}>
               <div className="mb-4 rounded-[10px] border border-[rgba(23,20,15,0.08)] bg-[#f7f5f1] p-4">
                 <DrawerSectionLabel>Drafted post</DrawerSectionLabel>
                 <p className="text-sm leading-[1.6] whitespace-pre-line text-[rgba(23,20,15,0.85)]">
@@ -388,9 +390,7 @@ function ItemDrawerBody({
               </div>
             </TaskPreviewSection>
           ) : null}
-          <TaskPreviewSection
-            delayMs={item.draftBody != null ? 240 : taskDescription != null ? 180 : 120}
-          >
+          <TaskPreviewSection delayMs={item.draftBody != null ? 180 : 120}>
           <div className="flex items-center gap-2.5 border-t border-[rgba(23,20,15,0.08)] pt-[18px]">
             <SignalButton
               variant="primary"

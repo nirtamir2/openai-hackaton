@@ -71,10 +71,19 @@ export function GrowthAgentFeedItemRow({ item, index, completed, onToggle, onOpe
             "truncate text-[14.5px] font-medium text-[rgba(23,20,15,0.88)]",
             completed ? "line-through" : "no-underline",
           )}
-          title={item.description ?? item.why ?? item.title}
         >
           {item.title}
         </p>
+        {item.description != null && item.description !== item.title ? (
+          <p
+            className={clsx(
+              "mt-0.5 line-clamp-2 text-[12.5px] leading-[1.45] text-[rgba(23,20,15,0.5)]",
+              completed ? "line-through" : "no-underline",
+            )}
+          >
+            {item.description}
+          </p>
+        ) : null}
       </div>
 
       <span

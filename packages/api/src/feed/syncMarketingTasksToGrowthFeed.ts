@@ -14,6 +14,10 @@ import { buildTaskPreviewTitle } from "../marketing/buildTaskPreviewTitle";
 import { enrichMarketingTaskFeedPayload } from "./enrichMarketingTaskFeedPayload";
 import { getMarketingTaskExternalId } from "./marketingTaskFeedIds";
 import {
+  normalizeMarketingTaskDescription,
+  normalizeMarketingTaskTitle,
+} from "@app-template/ai";
+import {
   getDayKeyFromDate,
   isMarketingTaskTargetedForToday,
 } from "../marketing/marketingTaskDates";
@@ -34,8 +38,11 @@ function readStoredVideoHook(payload: unknown) {
 }
 
 function buildShortTaskFeedPayload(task: ProductMarketingTaskModel) {
-  const description = task.description.trim();
-  const title = task.title.trim().length > 0 ? task.title.trim() : buildTaskPreviewTitle({ description });
+  const description = normalizeMarketingTaskDescription({ description: task.description });
+  const title =
+    task.title.trim().length > 0
+      ? normalizeMarketingTaskTitle({ title: task.title })
+      : buildTaskPreviewTitle({ description });
   const tag = getMarketingTaskTag({
     network: task.network,
     contentType: task.contentType,
@@ -67,15 +74,19 @@ function buildLongTaskFeedPayload({
   task: ProductMarketingTaskModel;
   videoHook: string | null;
 }) {
-  const description = task.description.trim();
+  const description = normalizeMarketingTaskDescription({ description: task.description });
   const subtasks = parseMarketingTaskSubtasks(task.subtasks);
-  const titleSource = videoHook ?? description;
+  const titleSource = videoHook ?? (task.title.trim() || description);
+  const title =
+    task.title.trim().length > 0
+      ? normalizeMarketingTaskTitle({ title: task.title })
+      : normalizeMarketingTaskTitle({ title: titleSource });
 
   return {
     tag: "PROJECT",
     color: "#6a3fd1",
     colorBg: "rgba(106,63,209,0.1)",
-    title: buildTaskPreviewTitle({ description: titleSource }),
+    title,
     description,
     meta: `Idea · Priority ${String(task.priority)}`,
     marketingTaskId: task.id,

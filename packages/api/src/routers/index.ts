@@ -133,6 +133,7 @@ export const appRouter = {
             shortTasks.map(async (task) =>
               createProductMarketingTask({
                 productId: marketSentiment.product.id,
+                title: task.title,
                 description: task.description,
                 taskType: task.taskType,
                 contentType: task.contentType,
@@ -160,6 +161,7 @@ export const appRouter = {
               createGrowthFeedIdea({
                 productId: marketSentiment.product.id,
                 task: {
+                  title: task.title,
                   description: task.description,
                   contentType: task.contentType,
                   network: task.network,

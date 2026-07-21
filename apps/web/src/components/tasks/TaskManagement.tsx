@@ -20,6 +20,10 @@ import {
   SelectValue,
 } from "@/components/ui/Select";
 import { getTaskListDateRange } from "@/utils/taskDateTime";
+import {
+  estimatedTaskGenerationDurationMs,
+  useGenerationEta,
+} from "@/hooks/useGenerationEta";
 import { getOrpcErrorMessage } from "@/utils/getOrpcErrorMessage";
 import { getGenerateMarketingIdeasMutationOptions, getGenerateMarketingTasksMutationOptions } from "@/utils/generateMarketingTasksMutation";
 import { orpc } from "@/utils/orpc";
@@ -106,6 +110,10 @@ export function TaskManagement({ productId }: Props) {
   const hasTasks = tasks.length > 0;
   const isGenerating = isGeneratingTasks || isGeneratingIdeas;
   const showTaskListLoading = tasksQuery.isLoading || isGeneratingTasks;
+  const taskGenerationEta = useGenerationEta({
+    estimatedDurationMs: estimatedTaskGenerationDurationMs,
+    isComplete: !isGeneratingTasks,
+  });
 
   return (
     <div className="flex flex-col gap-6">
@@ -213,7 +221,9 @@ export function TaskManagement({ productId }: Props) {
             disabled={isGenerating}
           >
             <Sparkles className="size-4" />
-            {isGeneratingTasks ? "Generating..." : "Generate today's tasks"}
+            {isGeneratingTasks
+              ? `Generating · Est. ${taskGenerationEta.label} left`
+              : "Generate today's tasks"}
           </Button>
           <Button
             variant="outline"
@@ -242,7 +252,10 @@ export function TaskManagement({ productId }: Props) {
       </div>
 
       {showTaskListLoading ? (
-        <TaskListLoading variant={isGeneratingTasks ? "generating" : "initial"} />
+        <TaskListLoading
+          variant={isGeneratingTasks ? "generating" : "initial"}
+          etaLabel={isGeneratingTasks ? taskGenerationEta.label : null}
+        />
       ) : null}
 
       {!showTaskListLoading && tasksQuery.isSuccess && !hasTasks ? (

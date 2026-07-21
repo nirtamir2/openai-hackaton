@@ -8,6 +8,7 @@ import {
 import { OnboardingCard } from "@/components/onboarding/OnboardingFooter";
 import { OnboardingStepHeader } from "@/components/onboarding/OnboardingStepHeader";
 import type { OnboardingState } from "@/components/onboarding/onboardingTypes";
+import { useGenerationEta } from "@/hooks/useGenerationEta";
 
 interface Props {
   state: OnboardingState;
@@ -17,6 +18,7 @@ interface Props {
 
 const stepAdvanceMs = 650;
 const completionDelayMs = 300;
+const estimatedGenerationDurationMs = 45_000;
 
 function getTodayLabel() {
   return new Intl.DateTimeFormat("en-US", {
@@ -152,6 +154,10 @@ export function DailyPlanGenerationProgress({ state, canNavigate, onComplete }: 
   const progressPercent = isComplete
     ? 100
     : Math.min(96, Math.round(((activeStepIndex + 1) / planSteps.length) * 100));
+  const generationEta = useGenerationEta({
+    estimatedDurationMs: estimatedGenerationDurationMs,
+    isComplete: canNavigate,
+  });
 
   return (
     <OnboardingCard>
@@ -188,7 +194,14 @@ export function DailyPlanGenerationProgress({ state, canNavigate, onComplete }: 
           <div className="flex w-full max-w-md flex-col gap-2">
             <div className="flex items-center justify-between text-[11px] font-medium tracking-[0.2px] text-[rgba(23,20,15,0.45)] uppercase">
               <span>Progress</span>
-              <span>{progressPercent}%</span>
+              <span>
+                {canNavigate ? null : (
+                  <span className="normal-case tracking-normal">
+                    Est. {generationEta.label} left ·{" "}
+                  </span>
+                )}
+                {progressPercent}%
+              </span>
             </div>
             <div className="h-1.5 overflow-hidden rounded-full bg-[rgba(23,20,15,0.08)]">
               <div

@@ -1,17 +1,5 @@
-const previewMaxLength = 100;
+import { normalizeMarketingTaskTitle } from "@app-template/ai";
 
 export function buildTaskPreviewTitle({ description }: { description: string }) {
-  const trimmed = description.trim();
-
-  if (trimmed.length === 0) {
-    return "";
-  }
-
-  const firstSentence = trimmed.split(/[.!?]/)[0]?.trim() ?? trimmed;
-
-  if (firstSentence.length <= previewMaxLength) {
-    return firstSentence;
-  }
-
-  return `${firstSentence.slice(0, previewMaxLength - 3)}...`;
+  return normalizeMarketingTaskTitle({ title: description });
 }

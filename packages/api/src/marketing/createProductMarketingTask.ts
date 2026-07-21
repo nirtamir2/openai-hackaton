@@ -3,8 +3,8 @@ import prisma, {
   MarketingTaskNetwork,
   MarketingTaskType,
 } from "@app-template/db";
+import { normalizeMarketingTaskDescription, normalizeMarketingTaskTitle } from "@app-template/ai";
 import { ORPCError } from "@orpc/server";
-import { buildTaskPreviewTitle } from "./buildTaskPreviewTitle";
 import { normalizeMarketingTaskSubtasks, serializeMarketingTaskSubtasks } from "./marketingTaskSubtasks";
 
 interface Props {
@@ -46,11 +46,11 @@ export async function createProductMarketingTask(input: Props) {
     taskType: input.taskType,
     subtasks: input.subtasks ?? [],
   });
-  const description = input.description.trim();
+  const description = normalizeMarketingTaskDescription({ description: input.description });
   const title =
     input.title != null && input.title.trim().length > 0
-      ? input.title.trim()
-      : buildTaskPreviewTitle({ description });
+      ? normalizeMarketingTaskTitle({ title: input.title })
+      : normalizeMarketingTaskTitle({ title: input.description });
 
   return await prisma.productMarketingTask.create({
     data: {

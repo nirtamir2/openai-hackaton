@@ -18,6 +18,7 @@ interface Props {
   productId: string;
   dayKey: GrowthAgentDayKey;
   taskCount: number;
+  ideaCount: number;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onRemoved: () => void;
@@ -27,6 +28,7 @@ export function RemoveDayTasksDialog({
   productId,
   dayKey,
   taskCount,
+  ideaCount,
   open,
   onOpenChange,
   onRemoved,
@@ -34,6 +36,11 @@ export function RemoveDayTasksDialog({
   const queryClient = useQueryClient();
   const dayName = growthAgentDayNames[dayKey];
   const taskLabel = taskCount === 1 ? "task" : "tasks";
+  const ideaLabel = ideaCount === 1 ? "idea" : "ideas";
+  const removalSummary =
+    ideaCount > 0
+      ? `all ${String(taskCount)} ${taskLabel} scheduled for ${dayName} and ${String(ideaCount)} video ad ${ideaLabel}`
+      : `all ${String(taskCount)} ${taskLabel} scheduled for ${dayName}`;
 
   const removeMutation = useMutation(
     orpc.feed.removeDayTasks.mutationOptions({
@@ -45,7 +52,7 @@ export function RemoveDayTasksDialog({
           queryKey: orpc.calendar.getTasks.key({ input: { productId } }),
         });
         toast.success(
-          `Removed ${String(result.removedCount)} ${result.removedCount === 1 ? "task" : "tasks"}`,
+          `Removed ${String(result.removedCount)} ${result.removedCount === 1 ? "item" : "items"}`,
         );
         onRemoved();
         onOpenChange(false);
@@ -65,7 +72,7 @@ export function RemoveDayTasksDialog({
       <AlertDialogPopup>
         <AlertDialogTitle>Remove all tasks</AlertDialogTitle>
         <AlertDialogDescription>
-          {`Are you sure you want to remove all ${String(taskCount)} ${taskLabel} scheduled for ${dayName}? This action cannot be undone.`}
+          {`Are you sure you want to remove ${removalSummary}? This action cannot be undone.`}
         </AlertDialogDescription>
         <AlertDialogFooter>
           <AlertDialogClose
