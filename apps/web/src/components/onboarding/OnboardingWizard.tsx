@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -23,9 +23,26 @@ import { orpc } from "@/utils/orpc";
 
 export function OnboardingWizard() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [state, setState] = useState<OnboardingState>(createInitialOnboardingState);
   const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
+  const [isGenerationWorkComplete, setIsGenerationWorkComplete] = useState(false);
+  const [productIdForFeed, setProductIdForFeed] = useState<string | null>(null);
+
+  const generateTasksMutation = useMutation(
+    orpc.generateMarketingTasks.mutationOptions({
+      onSuccess: async (_result, input) => {
+        await queryClient.invalidateQueries({
+          queryKey: orpc.feed.getFeed.key({ input: { productId: input.productId } }),
+        });
+        setIsGenerationWorkComplete(true);
+      },
+      onError: (error) => {
+        toast.error(getOrpcErrorMessage({ error }));
+      },
+    }),
+  );
 
   const completeOnboardingMutation = useMutation(
     orpc.onboarding.completeOnboarding.mutationOptions({
@@ -33,11 +50,11 @@ export function OnboardingWizard() {
         const companyName = getCompanyNameFromUrl({ url: onboardingState.website.url });
         saveOnboardingCompanyName({ companyName });
         saveOnboardingProductId({ productId: result.productId });
-        toast.success("Onboarding saved.");
-
-        void navigate({
-          to: "/products/$productId/feed",
-          params: { productId: result.productId },
+        setProductIdForFeed(result.productId);
+        generateTasksMutation.mutate({
+          productId: result.productId,
+          forToday: true,
+          taskCount: 3,
         });
       },
       onError: (error) => {
@@ -48,11 +65,23 @@ export function OnboardingWizard() {
 
   const currentStepId = onboardingSteps[currentStepIndex].id;
 
-  function handleOnboardingComplete() {
+  function handleNavigateToFeed() {
+    if (productIdForFeed == null) {
+      return;
+    }
+
+    void navigate({
+      to: "/products/$productId/feed",
+      params: { productId: productIdForFeed },
+    });
+  }
+
+  function startPlanGeneration() {
     if (state.personality == null) {
       return;
     }
 
+    setIsGeneratingPlan(true);
     completeOnboardingMutation.mutate({
       website: state.website,
       targetMarkets: state.targetMarkets,
@@ -71,14 +100,14 @@ export function OnboardingWizard() {
     setCurrentStepIndex((index) => Math.max(index - 1, 0));
   }
 
-  function startPlanGeneration() {
-    setIsGeneratingPlan(true);
-  }
-
   function renderStep() {
     if (isGeneratingPlan) {
       return (
-        <DailyPlanGenerationProgress state={state} onComplete={handleOnboardingComplete} />
+        <DailyPlanGenerationProgress
+          state={state}
+          isWorkComplete={isGenerationWorkComplete}
+          onComplete={handleNavigateToFeed}
+        />
       );
     }
 
