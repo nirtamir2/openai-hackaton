@@ -15,7 +15,11 @@
   "dependencies": {
     "@app-template/auth": "workspace:*",
     "@app-template/db": "workspace:*",
+    "@app-template/env": "workspace:*",
     "@orpc/server": "catalog:",
+    "@tanstack/ai": "catalog:",
+    "@tanstack/ai-openai": "catalog:",
+    "openai": "^6.48.0",
     "zod": "catalog:"
   },
   "devDependencies": {

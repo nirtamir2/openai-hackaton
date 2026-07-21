@@ -23,7 +23,7 @@ async function processLatestTrend() {
   }
 
   let products = await prisma.product.findMany({ take: 5 });
-  
+
   if (products.length === 0) {
     console.log("[TaskWorker] No products found. Creating a mock product for testing.");
     const mockProduct = await prisma.product.create({

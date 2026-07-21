@@ -14,7 +14,7 @@ async function main() {
   for (let i = 0; i < 10; i++) {
     console.log(`Generating trend ${i + 1}/10...`);
     const generated = await aiService.generateTrend();
-    
+
     if (!generated) {
       console.log("Failed to generate trend.");
       continue;

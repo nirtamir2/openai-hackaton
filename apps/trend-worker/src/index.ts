@@ -12,7 +12,7 @@ const aiService = new MarketingAIService();
 async function createTrend() {
   console.log("[TrendWorker] Generating new trend...");
   const generated = await aiService.generateTrend();
-  
+
   if (!generated) {
     console.log("[TrendWorker] Failed to generate trend.");
     return null;
@@ -40,7 +40,7 @@ async function cleanupOldTrends() {
       },
     },
   });
-  
+
   if (deleted.count > 0) {
     console.log(`[TrendWorker] Cleanup: Deleted ${deleted.count} old trends.`);
   }
