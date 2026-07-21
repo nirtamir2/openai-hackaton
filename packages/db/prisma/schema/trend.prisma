@@ -1,0 +1,21 @@
+enum TrendType {
+  VIDEO     @map("video")
+  MEME      @map("meme")
+  TEXT      @map("text")
+  NEWS      @map("news")
+  EVENTS    @map("events")
+  OTHER     @map("other")
+}
+
+model Trend {
+  id              String                 @id @default(uuid()) @db.Uuid
+  source          String
+  type            TrendType
+  description     String
+  popularExamples String[]               @map("popular_examples")
+  createdAt       DateTime               @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime               @updatedAt @map("updated_at") @db.Timestamptz
+  marketingTasks  ProductMarketingTask[]
+
+  @@map("trends")
+}
