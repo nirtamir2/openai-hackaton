@@ -53,6 +53,49 @@ const getORPCClient = createIsomorphicFn()
     return createORPCClient(link);
   });
 
-export const client: RouterClient<AppRouter> = getORPCClient();
+function createLazyOrpcClient(): RouterClient<AppRouter> {
+  function createProxy<T extends Record<string | symbol, unknown>>(getValue: () => T): T {
+    return new Proxy({} as T, {
+      get(_target, prop: string | symbol): unknown {
+        const resolved = getValue();
+        const value = resolved[prop];
 
-export const orpc = createTanstackQueryUtils(client);
+        if (typeof value === "function") {
+          return value;
+        }
+
+        if (value != null && typeof value === "object") {
+          return createProxy(() => value as Record<string | symbol, unknown>);
+        }
+
+        return createProxy(() => (getValue()[prop] ?? {}) as Record<string | symbol, unknown>);
+      },
+    });
+  }
+
+  return createProxy(() => getORPCClient() as Record<string | symbol, unknown>) as RouterClient<AppRouter>;
+}
+
+export const client = createLazyOrpcClient();
+
+type OrpcUtils = ReturnType<typeof createTanstackQueryUtils<RouterClient<AppRouter>>>;
+
+let orpcUtils: OrpcUtils | null = null;
+
+function resolveOrpcUtils(): OrpcUtils {
+  orpcUtils ??= createTanstackQueryUtils(client);
+  return orpcUtils;
+}
+
+export const orpc = new Proxy({} as OrpcUtils, {
+  get(_target, prop: keyof OrpcUtils) {
+    return resolveOrpcUtils()[prop];
+  },
+});
+
+if (import.meta.hot != null) {
+  import.meta.hot.dispose(() => {
+    orpcUtils = null;
+    queryClient.clear();
+  });
+}

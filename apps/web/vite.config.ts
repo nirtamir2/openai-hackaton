@@ -22,6 +22,8 @@ export default defineConfig({
     nitro({
       preset: "vercel",
       traceDeps: [
+        "@tanstack/ai",
+        "@tanstack/ai-openai",
         "@takumi-rs/image-response",
         "@takumi-rs/core",
         "@takumi-rs/helpers",

@@ -24,6 +24,8 @@ model ProductMarketingTask {
   taskType    MarketingTaskType @map("task_type")
   priority    Int
   targetDate  DateTime          @map("target_date") @db.Timestamptz
+  scheduledStart DateTime        @map("scheduled_start") @db.Timestamptz
+  scheduledEnd   DateTime        @map("scheduled_end") @db.Timestamptz
   createdAt   DateTime          @default(now()) @map("created_at") @db.Timestamptz
   updatedAt   DateTime          @updatedAt @map("updated_at") @db.Timestamptz
   trendId     String?           @map("trend_id") @db.Uuid
@@ -33,5 +35,6 @@ model ProductMarketingTask {
   @@index([productId])
   @@index([targetDate])
   @@index([priority])
+  @@index([productId, scheduledStart, scheduledEnd])
   @@map("product_marketing_tasks")
 }
