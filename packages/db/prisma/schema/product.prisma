@@ -40,6 +40,8 @@ model Product {
 model ProductMarketingTask {
   id             String                   @id @default(uuid()) @db.Uuid
   productId      String                   @map("product_id") @db.Uuid
+  title          String                   @default("")
+  summary        String?
   description    String
   taskType       MarketingTaskType        @map("task_type")
   contentType    MarketingTaskContentType @map("content_type")

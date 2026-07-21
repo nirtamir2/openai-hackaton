@@ -5,7 +5,6 @@ import {
   MarketingTaskNetwork,
 } from "@app-template/db";
 import type { ProductGrowthFeedEntryModel } from "@app-template/db";
-import { buildIdeaDescription } from "../marketing/buildIdeaDescription";
 
 export type GrowthAgentDayKey = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
 
@@ -351,7 +350,7 @@ function mapIdea({
     id: entry.externalId,
     title,
     meta,
-    description: buildIdeaDescription({ description }),
+    description,
     network,
     contentType,
     why: readString(payload, "why"),

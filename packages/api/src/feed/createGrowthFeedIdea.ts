@@ -8,6 +8,8 @@ import { buildTaskPreviewTitle } from "../marketing/buildTaskPreviewTitle";
 
 interface TaskDraft {
   description: string;
+  title: string | null;
+  summary: string | null;
   contentType: MarketingTaskContentType;
   network: MarketingTaskNetwork;
   videoHook: string;
@@ -28,11 +30,13 @@ export async function createGrowthFeedIdea({ productId, task }: Props) {
   const description = task.description.trim();
   const videoHook = task.videoHook.trim();
   const externalId = `idea-${crypto.randomUUID()}`;
+  const title = task.title ?? buildTaskPreviewTitle({ description });
+  const summary = task.summary ?? buildIdeaDescription({ description });
 
   const payload = {
-    title: buildTaskPreviewTitle({ description: videoHook }),
+    title,
     meta: `Meta video ad · Priority ${String(task.priority)}`,
-    description: buildIdeaDescription({ description }),
+    description: summary,
     videoHook,
     why: "Targets users frustrated with a competitor weakness your product solves.",
     todos: task.subtasks.map((subtask) => ({
@@ -42,6 +46,8 @@ export async function createGrowthFeedIdea({ productId, task }: Props) {
     })),
     taskDraft: {
       description,
+      title,
+      summary,
       contentType: task.contentType,
       network: task.network,
       videoHook,

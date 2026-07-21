@@ -55,6 +55,8 @@ function readTaskDraft(payload: Record<string, unknown>) {
   }
 
   const description = readString(draft, "description");
+  const title = readString(draft, "title");
+  const summary = readString(draft, "summary");
   const contentType = readString(draft, "contentType");
   const network = readString(draft, "network");
   const videoHook = readString(draft, "videoHook");
@@ -88,6 +90,8 @@ function readTaskDraft(payload: Record<string, unknown>) {
 
   return {
     description,
+    title,
+    summary,
     contentType: contentType as MarketingTaskContentType,
     network: network as MarketingTaskNetwork,
     videoHook,
@@ -136,6 +140,8 @@ export async function approveGrowthFeedIdea({ productId, entryId }: Props) {
 
   const marketingTask = await createProductMarketingTask({
     productId,
+    title: taskDraft.title,
+    summary: taskDraft.summary,
     description: taskDraft.description,
     taskType: MarketingTaskType.LONG,
     contentType: taskDraft.contentType,
