@@ -4,12 +4,13 @@ import type { GrowthAgentFeedItem } from "@/components/growth-agent/growthAgentT
 
 interface Props {
   item: GrowthAgentFeedItem;
+  index: number;
   completed: boolean;
   onToggle: () => void;
   onOpen: () => void;
 }
 
-export function GrowthAgentFeedItemRow({ item, completed, onToggle, onOpen }: Props) {
+export function GrowthAgentFeedItemRow({ item, index, completed, onToggle, onOpen }: Props) {
   const status = completed
     ? "Completed"
     : item.live === true
@@ -28,9 +29,10 @@ export function GrowthAgentFeedItemRow({ item, completed, onToggle, onOpen }: Pr
         }
       }}
       className={clsx(
-        "flex cursor-pointer items-center gap-3.5 rounded-[10px] border border-[rgba(23,20,15,0.1)] bg-white px-[18px] py-3.5 shadow-[0_1px_2px_rgba(23,20,15,0.03)]",
+        "growth-task-row-enter flex cursor-pointer items-center gap-3.5 rounded-[10px] border border-[rgba(23,20,15,0.1)] bg-white px-[18px] py-3.5 shadow-[0_1px_2px_rgba(23,20,15,0.03)] transition-[box-shadow,transform] duration-200 hover:-translate-y-px hover:shadow-[0_4px_12px_rgba(23,20,15,0.08)] motion-reduce:transition-none motion-reduce:hover:translate-y-0",
         completed ? "opacity-55" : "opacity-100",
       )}
+      style={{ animationDelay: `${String(index * 70)}ms` }}
     >
       <button
         type="button"
