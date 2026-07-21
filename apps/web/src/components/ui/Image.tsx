@@ -85,7 +85,7 @@ export function Image({
       <span
         aria-hidden
         className={clsx(
-          "absolute inset-0 bg-linear-to-br from-white/12 via-white/4 to-app-blue/15 transition-opacity duration-700 ease-(--ease-app-out)",
+          "absolute inset-0 bg-muted transition-opacity duration-700 ease-out",
           reveal !== "none" && !isLoaded && "opacity-100",
           (reveal === "none" || isLoaded) && "opacity-0",
           reveal !== "none" && !isLoaded && "animate-pulse",
@@ -95,7 +95,7 @@ export function Image({
       <img
         alt={alt}
         className={clsx(
-          "relative z-10 block size-full transition-[filter,opacity,transform] duration-700 ease-(--ease-app-out) motion-reduce:scale-100 motion-reduce:blur-none motion-reduce:transition-none",
+          "relative z-10 block size-full transition-[filter,opacity,transform] duration-700 ease-out motion-reduce:scale-100 motion-reduce:blur-none motion-reduce:transition-none",
           fit === "contain" && "object-contain",
           fit === "cover" && "object-cover",
           reveal === "blur" && !isLoaded && !hasFailed && "scale-[1.04] opacity-0 blur-2xl",

@@ -8,7 +8,7 @@ function Card({
     <div
       data-slot="card"
       data-size={size}
-      className="group/card flex flex-col gap-4 overflow-hidden rounded-lg border border-app-border bg-app-surface-soft py-4 text-sm/relaxed text-app-text shadow-(--app-shadow-raised) has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:gap-2 data-[size=sm]:py-3 data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-lg *:[img:last-child]:rounded-b-lg"
+      className="group/card flex flex-col gap-4 overflow-hidden rounded-xl border border-border bg-card py-5 text-sm/relaxed text-card-foreground shadow-sm has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:gap-2 data-[size=sm]:py-4 data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-xl *:[img:last-child]:rounded-b-xl"
       {...props}
     />
   );
@@ -28,7 +28,7 @@ function CardTitle(props: Omit<React.ComponentProps<"div">, "className">) {
   return (
     <div
       data-slot="card-title"
-      className="text-sm font-semibold text-app-text group-data-[size=sm]/card:text-sm"
+      className="font-semibold text-card-foreground group-data-[size=sm]/card:text-sm"
       {...props}
     />
   );
@@ -36,7 +36,11 @@ function CardTitle(props: Omit<React.ComponentProps<"div">, "className">) {
 
 function CardDescription(props: Omit<React.ComponentProps<"div">, "className">) {
   return (
-    <div data-slot="card-description" className="text-xs/relaxed text-app-text-muted" {...props} />
+    <div
+      data-slot="card-description"
+      className="text-xs/relaxed text-muted-foreground"
+      {...props}
+    />
   );
 }
 
@@ -60,7 +64,7 @@ function CardFooter(props: Omit<React.ComponentProps<"div">, "className">) {
   return (
     <div
       data-slot="card-footer"
-      className="flex items-center border-t border-app-border p-4 group-data-[size=sm]/card:p-3"
+      className="flex items-center border-t border-border p-4 group-data-[size=sm]/card:p-3"
       {...props}
     />
   );

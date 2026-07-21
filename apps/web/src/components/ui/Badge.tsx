@@ -5,18 +5,18 @@ import { cva } from "class-variance-authority";
 import { clsx } from "clsx";
 
 const badgeVariants = cva(
-  "group/badge inline-flex h-6 w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-md border border-transparent px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap transition-[border-color,background-color,color] duration-150 ease-(--ease-app-out) focus-visible:ring-2 focus-visible:ring-app-accent/50 focus-visible:ring-offset-2 focus-visible:ring-offset-app-canvas focus-visible:outline-none has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 aria-invalid:border-app-red aria-invalid:ring-app-red/20 [&>svg]:pointer-events-none [&>svg]:size-3!",
+  "group/badge inline-flex h-5 w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-md border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3",
   {
     variants: {
       variant: {
-        default: "border-app-accent/40 bg-app-accent text-app-canvas [a]:hover:bg-app-accent/90",
-        secondary: "border-app-border bg-app-surface-muted text-app-text [a]:hover:bg-white/10",
+        default: "bg-primary text-primary-foreground [a]:hover:bg-primary/90",
+        secondary: "bg-secondary text-secondary-foreground [a]:hover:bg-secondary/80",
         destructive:
-          "border-app-red/35 bg-app-red/10 text-app-red focus-visible:ring-app-red/20 [a]:hover:bg-app-red/20",
+          "bg-destructive text-white focus-visible:ring-destructive/20 dark:bg-destructive/60 dark:focus-visible:ring-destructive/40 [a]:hover:bg-destructive/90",
         outline:
-          "border-app-border bg-transparent text-app-text-muted [a]:hover:bg-app-surface-soft [a]:hover:text-app-text",
-        ghost: "text-app-text-muted hover:bg-app-surface-soft hover:text-app-text",
-        link: "text-app-accent underline-offset-4 hover:underline",
+          "border-border bg-transparent text-foreground [a]:hover:bg-accent [a]:hover:text-accent-foreground",
+        ghost: "text-foreground hover:bg-accent hover:text-accent-foreground",
+        link: "text-primary underline-offset-4 hover:underline",
       },
     },
     defaultVariants: {
