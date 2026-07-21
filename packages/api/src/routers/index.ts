@@ -1,8 +1,10 @@
 import type { RouterClient } from "@orpc/server";
 import { ORPCError } from "@orpc/server";
 import { z } from "zod";
+import { generateMarketingTasks } from "@app-template/ai";
 import prisma from "@app-template/db";
 import { protectedProcedure, publicProcedure } from "../index";
+import { getProductSentimentContext } from "../sentiment/getProductSentimentContext";
 import { calendarRouter } from "./calendar";
 import { feedRouter } from "./feed";
 import { onboardingRouter } from "./onboarding";
@@ -25,18 +27,20 @@ export const appRouter = {
   generateMarketingTasks: protectedProcedure
     .input(z.object({ productId: z.uuid() }))
     .handler(async ({ input }) => {
-      const { getProductSentimentContext } = await import(
-        "../sentiment/getProductSentimentContext"
-      );
-      const { generateMarketingTasks } = await import("../marketing/generateMarketingTasks");
       const marketSentiment = await getProductSentimentContext({
         productId: input.productId,
       });
 
-      if (marketSentiment == null) throw new ORPCError("NOT_FOUND");
+      if (marketSentiment == null) {
+        throw new ORPCError("NOT_FOUND");
+      }
 
       const generatedTasks = await generateMarketingTasks({
-        context: marketSentiment,
+        context: {
+          ...marketSentiment,
+          trend: null,
+        },
+        taskCount: 3,
       });
       const marketingTasks = await prisma.productMarketingTask.createManyAndReturn({
         data: generatedTasks.map((task) => ({

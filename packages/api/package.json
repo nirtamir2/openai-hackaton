@@ -17,8 +17,6 @@
     "@app-template/db": "workspace:*",
     "@app-template/env": "workspace:*",
     "@orpc/server": "catalog:",
-    "@tanstack/ai": "catalog:",
-    "@tanstack/ai-openai": "catalog:",
     "zod": "catalog:"
   },
   "devDependencies": {
