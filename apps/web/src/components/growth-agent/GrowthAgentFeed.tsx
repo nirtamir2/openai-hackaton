@@ -1,3 +1,4 @@
+import type { GrowthAgentFeedData } from "@app-template/api/feed/mapGrowthFeedEntries";
 import { GrowthIdeaStatus } from "@app-template/db/enums";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Clock, Sparkles } from "lucide-react";
@@ -64,25 +65,105 @@ function toGrowthIdeaStatus(status: IdeaStatus): GrowthIdeaStatus {
   return GrowthIdeaStatus.PENDING;
 }
 
+function patchFeedItemCompleted({
+  data,
+  entryId,
+  completed,
+}: {
+  data: GrowthAgentFeedData;
+  entryId: string;
+  completed: boolean;
+}) {
+  return {
+    ...data,
+    feedItems: data.feedItems.map((item) =>
+      item.id === entryId ? { ...item, defaultCompleted: completed } : item,
+    ),
+  };
+}
+
+function patchIdeaStatus({
+  data,
+  entryId,
+  status,
+}: {
+  data: GrowthAgentFeedData;
+  entryId: string;
+  status: GrowthIdeaStatus;
+}) {
+  return {
+    ...data,
+    ideaStatuses: {
+      ...data.ideaStatuses,
+      [entryId]: status,
+    },
+  };
+}
+
+function patchTodoDone({
+  data,
+  entryId,
+  todoId,
+  done,
+}: {
+  data: GrowthAgentFeedData;
+  entryId: string;
+  todoId: string;
+  done: boolean;
+}) {
+  const key = `${entryId}:${todoId}`;
+
+  function patchTodos<T extends { id: string; todos: Array<{ id: string; done: boolean }> }>(
+    items: Array<T>,
+  ) {
+    return items.map((item) =>
+      item.id === entryId
+        ? {
+            ...item,
+            todos: item.todos.map((todo) =>
+              todo.id === todoId ? { ...todo, done } : todo,
+            ),
+          }
+        : item,
+    );
+  }
+
+  return {
+    ...data,
+    todoDone: {
+      ...data.todoDone,
+      [key]: done,
+    },
+    ideas: patchTodos(data.ideas),
+    projects: patchTodos(data.projects),
+  };
+}
+
+function isCompleted(item: GrowthAgentFeedItem) {
+  return item.defaultCompleted === true;
+}
+
+function getProjectDoneCount(project: GrowthAgentProject) {
+  return project.todos.filter((todo) => todo.done).length;
+}
+
 export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
   const queryClient = useQueryClient();
   const growthAgentToday = getGrowthAgentToday();
   const growthAgentDays = getGrowthAgentDays();
   const [selectedDay, setSelectedDay] = useState<GrowthAgentDayKey>(growthAgentToday);
-  const [completedOverrides, setCompletedOverrides] = useState<Record<string, boolean>>({});
-  const [ideaStatusOverrides, setIdeaStatusOverrides] = useState<Record<string, IdeaStatus>>({});
-  const [todoDoneOverrides, setTodoDoneOverrides] = useState<Record<string, boolean>>({});
   const [drawerContent, setDrawerContent] = useState<DrawerContent | null>(null);
 
-  const feedQuery = useQuery(
-    orpc.feed.getFeed.queryOptions({
-      input: { productId },
-    }),
-  );
+  const feedQueryOptions = orpc.feed.getFeed.queryOptions({
+    input: { productId },
+  });
+  const feedQueryKey = feedQueryOptions.queryKey;
+
+  const feedQuery = useQuery(feedQueryOptions);
 
   const invalidateFeed = async () => {
     await queryClient.invalidateQueries({
-      queryKey: orpc.feed.getFeed.key({ input: { productId } }),
+      queryKey: feedQueryKey,
     });
   };
 
@@ -99,28 +180,82 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
     }),
   );
 
-  const isFeedBusy = feedQuery.isFetching || generateMutation.isPending;
+  const isFeedBusy = generateMutation.isPending;
 
   const setItemCompletedMutation = useMutation(
     orpc.feed.setItemCompleted.mutationOptions({
-      onSuccess: async () => {
-        await invalidateFeed();
+      onMutate: async ({ entryId, completed }) => {
+        await queryClient.cancelQueries({ queryKey: feedQueryKey });
+        const previous = queryClient.getQueryData(feedQueryKey);
+
+        queryClient.setQueryData(feedQueryKey, (old) => {
+          if (old == null) {
+            return old;
+          }
+
+          return patchFeedItemCompleted({ data: old, entryId, completed });
+        });
+
+        return { previous };
+      },
+      onError: (error, _input, context) => {
+        if (context?.previous != null) {
+          queryClient.setQueryData(feedQueryKey, context.previous);
+        }
+
+        toast.error(getOrpcErrorMessage({ error }));
       },
     }),
   );
 
   const setIdeaStatusMutation = useMutation(
     orpc.feed.setIdeaStatus.mutationOptions({
-      onSuccess: async () => {
-        await invalidateFeed();
+      onMutate: async ({ entryId, status }) => {
+        await queryClient.cancelQueries({ queryKey: feedQueryKey });
+        const previous = queryClient.getQueryData(feedQueryKey);
+
+        queryClient.setQueryData(feedQueryKey, (old) => {
+          if (old == null) {
+            return old;
+          }
+
+          return patchIdeaStatus({ data: old, entryId, status });
+        });
+
+        return { previous };
+      },
+      onError: (error, _input, context) => {
+        if (context?.previous != null) {
+          queryClient.setQueryData(feedQueryKey, context.previous);
+        }
+
+        toast.error(getOrpcErrorMessage({ error }));
       },
     }),
   );
 
   const setTodoDoneMutation = useMutation(
     orpc.feed.setTodoDone.mutationOptions({
-      onSuccess: async () => {
-        await invalidateFeed();
+      onMutate: async ({ entryId, todoId, done }) => {
+        await queryClient.cancelQueries({ queryKey: feedQueryKey });
+        const previous = queryClient.getQueryData(feedQueryKey);
+
+        queryClient.setQueryData(feedQueryKey, (old) => {
+          if (old == null) {
+            return old;
+          }
+
+          return patchTodoDone({ data: old, entryId, todoId, done });
+        });
+
+        return { previous };
+      },
+      onError: (error, _input, context) => {
+        if (context?.previous != null) {
+          queryClient.setQueryData(feedQueryKey, context.previous);
+        }
+
+        toast.error(getOrpcErrorMessage({ error }));
       },
     }),
   );
@@ -133,37 +268,20 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
     const statuses: Record<string, IdeaStatus> = {};
 
     for (const idea of ideas) {
-      const override = ideaStatusOverrides[idea.id];
       const serverStatus = feedQuery.data?.ideaStatuses[idea.id];
 
       statuses[idea.id] =
-        override ??
-        (serverStatus != null ? mapIdeaStatus(serverStatus) : "pending");
+        serverStatus == null ? "pending" : mapIdeaStatus(serverStatus);
     }
 
     return statuses;
-  }, [feedQuery.data?.ideaStatuses, ideaStatusOverrides, ideas]);
+  }, [feedQuery.data?.ideaStatuses, ideas]);
 
-  const todoDone = useMemo(() => {
-    return {
-      ...(feedQuery.data?.todoDone ?? {}),
-      ...todoDoneOverrides,
-    };
-  }, [feedQuery.data?.todoDone, todoDoneOverrides]);
-
-  function isCompleted(item: GrowthAgentFeedItem) {
-    const override = completedOverrides[item.id];
-
-    if (override != null) {
-      return override;
-    }
-
-    return item.defaultCompleted === true;
-  }
+  const todoDone = feedQuery.data?.todoDone ?? {};
 
   const openCount = useMemo(() => {
     return feedItems.filter((item) => !isCompleted(item)).length;
-  }, [completedOverrides, feedItems]);
+  }, [feedItems]);
 
   useEffect(() => {
     onOpenCountChange(openCount);
@@ -195,17 +313,11 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
   const postponedIdeas = ideas.filter((idea) => (ideaStatus[idea.id] ?? "pending") === "postponed");
   const approvedIdeas = ideas.filter((idea) => (ideaStatus[idea.id] ?? "pending") === "approved");
 
-  function getProjectDoneCount(project: GrowthAgentProject) {
-    return project.todos.filter((todo) => todoDone[`${project.id}:${todo.id}`] ?? todo.done).length;
-  }
-
   function setCompleted({ entryId, completed }: { entryId: string; completed: boolean }) {
-    setCompletedOverrides((previous) => ({ ...previous, [entryId]: completed }));
     setItemCompletedMutation.mutate({ productId, entryId, completed });
   }
 
   function updateIdeaStatus({ entryId, status }: { entryId: string; status: IdeaStatus }) {
-    setIdeaStatusOverrides((previous) => ({ ...previous, [entryId]: status }));
     setIdeaStatusMutation.mutate({
       productId,
       entryId,
@@ -222,8 +334,6 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
     todoId: string;
     done: boolean;
   }) {
-    const key = `${projectId}:${todoId}`;
-    setTodoDoneOverrides((previous) => ({ ...previous, [key]: done }));
     setTodoDoneMutation.mutate({ productId, entryId: projectId, todoId, done });
   }
 
@@ -247,7 +357,7 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
       <div className="mb-5 flex flex-wrap items-baseline justify-between gap-3">
         <h1 className="text-[26px] font-semibold tracking-[-0.3px]">This week</h1>
         <div className="flex flex-wrap items-center gap-3">
-          {feedQuery.isFetching && !feedQuery.isLoading ? (
+          {feedQuery.isFetching ? (
             <span className="font-mono text-[11.5px] text-[rgba(23,20,15,0.45)]">Updating feed...</span>
           ) : null}
           {generateMutation.isPending ? (
@@ -272,10 +382,10 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
       </div>
 
       <div
-        className={isFeedBusy && !feedQuery.isLoading ? "pointer-events-none opacity-60" : undefined}
+        className={isFeedBusy ? "pointer-events-none opacity-60" : undefined}
       >
 
-      {liveItem != null ? (
+      {liveItem == null ? null : (
         <button
           type="button"
           onClick={() => {
@@ -292,7 +402,7 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
           </div>
           <span className="text-[13px] text-white/40">Open →</span>
         </button>
-      ) : null}
+      )}
 
       <div className="mb-6">
         <GrowthAgentDayPicker
@@ -367,7 +477,7 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
                   updateIdeaStatus({ entryId: idea.id, status: "approved" });
                 }}
               >
-                <Check className="size-[13px] stroke-[3]" />
+                <Check className="size-[13px] stroke-3" />
                 Approve
               </SignalButton>
               <SignalButton
@@ -424,10 +534,7 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
               colorBg: "rgba(106,63,209,0.1)",
               title: idea.title,
               meta: idea.meta,
-              todos: idea.todos.map((todo) => ({
-                ...todo,
-                done: todoDone[`${idea.id}:${todo.id}`] ?? todo.done,
-              })),
+              todos: idea.todos,
             }}
             doneCount={getProjectDoneCount({
               id: idea.id,
@@ -436,10 +543,7 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
               colorBg: "rgba(106,63,209,0.1)",
               title: idea.title,
               meta: idea.meta,
-              todos: idea.todos.map((todo) => ({
-                ...todo,
-                done: todoDone[`${idea.id}:${todo.id}`] ?? todo.done,
-              })),
+              todos: idea.todos,
             })}
             onOpen={() => {
               setDrawerContent({
@@ -453,10 +557,7 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
                   meta: idea.meta,
                   description: idea.description,
                   why: idea.why,
-                  todos: idea.todos.map((todo) => ({
-                    ...todo,
-                    done: todoDone[`${idea.id}:${todo.id}`] ?? todo.done,
-                  })),
+                  todos: idea.todos,
                 },
               });
             }}
@@ -466,30 +567,12 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
         {projects.map((project) => (
           <GrowthAgentProjectRow
             key={project.id}
-            project={{
-              ...project,
-              todos: project.todos.map((todo) => ({
-                ...todo,
-                done: todoDone[`${project.id}:${todo.id}`] ?? todo.done,
-              })),
-            }}
-            doneCount={getProjectDoneCount({
-              ...project,
-              todos: project.todos.map((todo) => ({
-                ...todo,
-                done: todoDone[`${project.id}:${todo.id}`] ?? todo.done,
-              })),
-            })}
+            project={project}
+            doneCount={getProjectDoneCount(project)}
             onOpen={() => {
               setDrawerContent({
                 kind: "project",
-                project: {
-                  ...project,
-                  todos: project.todos.map((todo) => ({
-                    ...todo,
-                    done: todoDone[`${project.id}:${todo.id}`] ?? todo.done,
-                  })),
-                },
+                project,
               });
             }}
           />
