@@ -70,10 +70,12 @@ interface GenerateMarketingTasksProps {
   forToday?: boolean;
 }
 
+export const marketingTaskDescriptionMaxLength = 2_000;
+
 const marketingTaskSchema = z.object({
-  description: z.string().min(20).max(500).meta({
+  description: z.string().min(20).max(marketingTaskDescriptionMaxLength).meta({
     description:
-      "A concrete marketing action for one configured channel. Start with the channel name, then specify the deliverable, target audience, and product evidence. Do not include customer names or URLs.",
+      "A detailed concrete marketing action for one configured channel. Start with the channel name, then specify the deliverable, target audience, product evidence, and execution steps. Do not include customer names or URLs.",
   }),
   taskType: z.enum(MarketingTaskType).meta({
     description:

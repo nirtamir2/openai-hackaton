@@ -1,5 +1,6 @@
 import prisma, { GrowthFeedEntryKind, MarketingTaskType } from "@app-template/db";
 import type { ProductMarketingTaskModel } from "@app-template/db";
+import { buildTaskPreviewTitle } from "../marketing/buildTaskPreviewTitle";
 import { getMarketingTaskExternalId } from "./marketingTaskFeedIds";
 import { isScheduledForToday } from "../marketing/marketingTaskDates";
 
@@ -12,15 +13,16 @@ function getDayKeyFromDate(date: Date) {
 function buildMarketingTaskFeedPayload(task: ProductMarketingTaskModel) {
   const tag =
     task.taskType === MarketingTaskType.SHORT ? "SHORT-TERM TASK" : "LONG-TERM TASK";
+  const description = task.description.trim();
 
   return {
     type: "post",
     tag,
     color: "#2f6f4e",
     colorBg: "rgba(47,111,78,0.1)",
-    title: task.description.trim(),
+    title: buildTaskPreviewTitle({ description }),
+    description,
     meta: `AI generated · Priority ${String(task.priority)}`,
-    why: task.description,
     marketingTaskId: task.id,
   };
 }

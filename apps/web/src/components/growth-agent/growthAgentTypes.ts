@@ -10,6 +10,7 @@ export interface GrowthAgentFeedItem {
   color: string;
   colorBg: string;
   title: string;
+  description?: string;
   meta: string;
   live?: boolean;
   defaultCompleted?: boolean;

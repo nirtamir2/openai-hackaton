@@ -20,6 +20,7 @@ export interface GrowthAgentFeedItem {
   color: string;
   colorBg: string;
   title: string;
+  description?: string;
   meta: string;
   live?: boolean;
   defaultCompleted?: boolean;
@@ -185,6 +186,7 @@ function mapFeedItem({
     color,
     colorBg,
     title,
+    description: readString(payload, "description"),
     meta,
     live: readBoolean(payload, "live"),
     defaultCompleted: entry.completed,
