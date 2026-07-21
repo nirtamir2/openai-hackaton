@@ -499,6 +499,9 @@ importers:
       '@tanstack/ai-openai':
         specifier: 'catalog:'
         version: 0.17.1(@tanstack/ai@0.42.0)(ws@8.20.0)(zod@4.3.6)
+      openai:
+        specifier: ^6.48.0
+        version: 6.48.0(ws@8.20.0)(zod@4.3.6)
       zod:
         specifier: 'catalog:'
         version: 4.3.6
