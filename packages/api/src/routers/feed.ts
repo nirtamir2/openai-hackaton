@@ -56,7 +56,10 @@ export const feedRouter = {
   getFeed: publicProcedure.input(productIdSchema).handler(async ({ input }) => {
     const product = await prisma.product.findUnique({
       where: { id: input.productId },
-      select: { id: true },
+      select: {
+        id: true,
+        marketingTasksGeneratedAt: true,
+      },
     });
 
     if (product == null) {
@@ -70,7 +73,10 @@ export const feedRouter = {
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
     });
 
-    return mapGrowthFeedEntries(entries);
+    return {
+      ...mapGrowthFeedEntries(entries),
+      lastGeneratedAt: product.marketingTasksGeneratedAt?.toISOString() ?? null,
+    };
   }),
   setItemCompleted: publicProcedure
     .input(

@@ -24,8 +24,9 @@ model Product {
   minusSides         String                 @map("minus_sides")
   mainCompetitors    String                 @map("main_competitors")
   websiteUrl         String                 @default("") @map("website_url")
-  onboardingConfig   Json                   @default("{}") @map("onboarding_config")
-  createdAt          DateTime               @default(now()) @map("created_at") @db.Timestamptz
+  onboardingConfig            Json                   @default("{}") @map("onboarding_config")
+  marketingTasksGeneratedAt     DateTime?              @map("marketing_tasks_generated_at") @db.Timestamptz
+  createdAt                   DateTime               @default(now()) @map("created_at") @db.Timestamptz
   updatedAt          DateTime               @updatedAt @map("updated_at") @db.Timestamptz
   marketingTasks     ProductMarketingTask[]
   sentiments         ProductSentiment[]

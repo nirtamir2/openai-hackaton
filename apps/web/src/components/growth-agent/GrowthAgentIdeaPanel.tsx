@@ -1,6 +1,7 @@
 import { Check, Clock } from "lucide-react";
 import type { GrowthAgentIdea } from "@/components/growth-agent/growthAgentTypes";
 import { SignalButton } from "@/components/home/SignalButton";
+import { TaskTypeBadge } from "@/components/tasks/TaskTypeBadge";
 
 interface Props {
   pendingIdeas: Array<GrowthAgentIdea>;
@@ -41,9 +42,14 @@ export function GrowthAgentIdeaPanel({
           }}
           className="cursor-pointer rounded-[10px] border-[1.5px] border-dashed border-[rgba(106,63,209,0.35)] bg-[rgba(106,63,209,0.06)] p-5"
         >
-          <span className="font-mono text-[10.5px] font-semibold tracking-[0.3px] text-[#6a3fd1]">
-            NEW IDEA
-          </span>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-mono text-[10.5px] font-semibold tracking-[0.3px] text-[#6a3fd1]">
+              NEW IDEA
+            </span>
+            {idea.network != null && idea.contentType != null ? (
+              <TaskTypeBadge contentType={idea.contentType} network={idea.network} />
+            ) : null}
+          </div>
           <p className="mt-1.5 text-[15px] font-semibold text-[rgba(23,20,15,0.9)]">{idea.title}</p>
           <p className="mt-1 text-xs text-[rgba(23,20,15,0.42)]">{idea.meta}</p>
           <p className="mt-2.5 mb-4 line-clamp-2 text-sm leading-[1.55] text-[rgba(23,20,15,0.75)]">

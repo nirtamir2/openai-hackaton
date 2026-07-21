@@ -125,8 +125,24 @@ export const appRouter = {
         ),
       );
 
+      const draftContext = {
+        product: marketSentiment.product,
+        marketingProfile: marketSentiment.marketingProfile,
+        marketingTasks: marketSentiment.marketingTasks,
+        sentiments: marketSentiment.sentiments,
+        trend:
+          trend == null
+            ? null
+            : {
+                source: trend.source,
+                type: trend.type,
+                description: trend.description,
+                popularExamples: trend.popularExamples,
+              },
+      };
+
       await Promise.all(
-        marketingTasks.map(async (task) => syncMarketingTaskToGrowthFeed(task)),
+        marketingTasks.map(async (task) => syncMarketingTaskToGrowthFeed(task, draftContext)),
       );
 
       const ideas = await Promise.all(
@@ -141,6 +157,17 @@ export const appRouter = {
         ),
       );
 
+      const lastGeneratedAt = new Date();
+
+      await prisma.product.update({
+        where: {
+          id: marketSentiment.product.id,
+        },
+        data: {
+          marketingTasksGeneratedAt: lastGeneratedAt,
+        },
+      });
+
       return {
         productId: marketSentiment.product.id,
         sentimentWindow: {
@@ -149,6 +176,7 @@ export const appRouter = {
         },
         marketingTasks,
         ideas,
+        lastGeneratedAt: lastGeneratedAt.toISOString(),
       };
     }),
 };

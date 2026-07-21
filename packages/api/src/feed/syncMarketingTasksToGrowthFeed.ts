@@ -9,9 +9,12 @@ import prisma, {
   parseMarketingTaskSubtasks,
 } from "@app-template/db";
 import type { ProductMarketingTaskModel } from "@app-template/db";
+import type { MarketingTaskGenerationContext } from "@app-template/ai";
 import { buildTaskPreviewTitle } from "../marketing/buildTaskPreviewTitle";
+import { enrichMarketingTaskFeedPayload } from "./enrichMarketingTaskFeedPayload";
 import { getMarketingTaskExternalId } from "./marketingTaskFeedIds";
 import { isScheduledForToday } from "../marketing/marketingTaskDates";
+import { getProductSentimentContext } from "../sentiment/getProductSentimentContext";
 
 const dayKeys = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
 
@@ -65,9 +68,36 @@ function buildLongTaskFeedPayload(task: ProductMarketingTaskModel) {
   };
 }
 
-export async function syncMarketingTaskToGrowthFeed(task: ProductMarketingTaskModel) {
+export async function syncMarketingTaskToGrowthFeed(
+  task: ProductMarketingTaskModel,
+  context: MarketingTaskGenerationContext | null = null,
+) {
   const externalId = getMarketingTaskExternalId({ taskId: task.id });
   const isLongTask = task.taskType === MarketingTaskType.LONG;
+
+  const existingEntry = await prisma.productGrowthFeedEntry.findUnique({
+    where: {
+      productId_externalId: {
+        productId: task.productId,
+        externalId,
+      },
+    },
+    select: {
+      payload: true,
+    },
+  });
+
+  const basePayload = isLongTask
+    ? buildLongTaskFeedPayload(task)
+    : buildShortTaskFeedPayload(task);
+  const payload = isLongTask
+    ? basePayload
+    : await enrichMarketingTaskFeedPayload({
+        task,
+        payload: basePayload,
+        existingPayload: existingEntry?.payload,
+        context,
+      });
 
   return await prisma.productGrowthFeedEntry.upsert({
     where: {
@@ -83,13 +113,13 @@ export async function syncMarketingTaskToGrowthFeed(task: ProductMarketingTaskMo
       dayKey: isLongTask ? null : getDayKeyFromDate(task.scheduledStart),
       sortOrder: 1_000 + task.priority,
       completed: false,
-      payload: isLongTask ? buildLongTaskFeedPayload(task) : buildShortTaskFeedPayload(task),
+      payload,
     },
     update: {
       kind: isLongTask ? GrowthFeedEntryKind.PROJECT : GrowthFeedEntryKind.FEED_ITEM,
       dayKey: isLongTask ? null : getDayKeyFromDate(task.scheduledStart),
       sortOrder: 1_000 + task.priority,
-      payload: isLongTask ? buildLongTaskFeedPayload(task) : buildShortTaskFeedPayload(task),
+      payload,
     },
   });
 }
@@ -155,5 +185,19 @@ export async function syncMarketingTasksToGrowthFeed({ productId }: { productId:
     return;
   }
 
-  await Promise.all(tasksToSync.map((task) => syncMarketingTaskToGrowthFeed(task)));
+  const sentimentContext = await getProductSentimentContext({ productId });
+  const draftContext =
+    sentimentContext == null
+      ? null
+      : {
+          product: sentimentContext.product,
+          marketingProfile: sentimentContext.marketingProfile,
+          marketingTasks: sentimentContext.marketingTasks,
+          sentiments: sentimentContext.sentiments,
+          trend: null,
+        };
+
+  await Promise.all(
+    tasksToSync.map((task) => syncMarketingTaskToGrowthFeed(task, draftContext)),
+  );
 }

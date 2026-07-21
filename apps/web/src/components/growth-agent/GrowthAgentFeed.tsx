@@ -20,6 +20,7 @@ import { getGrowthAgentDays, getGrowthAgentToday } from "@/components/growth-age
 import { Loader } from "@/components/layout/Loader";
 import { SignalButton } from "@/components/home/SignalButton";
 import { getOrpcErrorMessage } from "@/utils/getOrpcErrorMessage";
+import { formatRelativeTime } from "@/utils/formatRelativeTime";
 import { orpc } from "@/utils/orpc";
 
 type IdeaStatus = "pending" | "approved" | "postponed" | "cancelled";
@@ -154,6 +155,17 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
   const growthAgentDays = getGrowthAgentDays();
   const [selectedDay, setSelectedDay] = useState<GrowthAgentDayKey>(growthAgentToday);
   const [drawerContent, setDrawerContent] = useState<DrawerContent | null>(null);
+  const [relativeNow, setRelativeNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setRelativeNow(Date.now());
+    }, 60_000);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, []);
 
   const feedQueryOptions = orpc.feed.getFeed.queryOptions({
     input: { productId },
@@ -172,6 +184,16 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
     orpc.generateMarketingTasks.mutationOptions({
       onSuccess: async (result) => {
         setSelectedDay(growthAgentToday);
+        queryClient.setQueryData(feedQueryKey, (old) => {
+          if (old == null) {
+            return old;
+          }
+
+          return {
+            ...old,
+            lastGeneratedAt: result.lastGeneratedAt,
+          };
+        });
         await invalidateFeed();
         const ideaCount = result.ideas.length;
         const taskCount = result.marketingTasks.length;
@@ -351,6 +373,16 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
   const selectedDayLabel =
     growthAgentDayNames[selectedDay] + (selectedDay === growthAgentToday ? " · Today" : "");
 
+  const lastGeneratedLabel = useMemo(() => {
+    const lastGeneratedAt = feedQuery.data?.lastGeneratedAt;
+
+    if (lastGeneratedAt == null) {
+      return null;
+    }
+
+    return formatRelativeTime({ value: lastGeneratedAt, now: relativeNow });
+  }, [feedQuery.data?.lastGeneratedAt, relativeNow]);
+
   if (feedQuery.isLoading) {
     return <Loader />;
   }
@@ -385,10 +417,12 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
             <Sparkles className="size-[13px]" />
             {generateMutation.isPending ? "Generating..." : "Generate today's tasks"}
           </SignalButton>
-          <div className="flex items-center gap-2 font-mono text-[11.5px] text-[rgba(23,20,15,0.45)]">
-            <span className="inline-block size-1.5 rounded-full bg-[#2f6f4e]" />
-            last scanned 6 min ago
-          </div>
+          {lastGeneratedLabel == null ? null : (
+            <div className="flex items-center gap-2 font-mono text-[11.5px] text-[rgba(23,20,15,0.45)]">
+              <span className="inline-block size-1.5 rounded-full bg-[#2f6f4e]" />
+              last generated {lastGeneratedLabel}
+            </div>
+          )}
         </div>
       </div>
 

@@ -1,10 +1,12 @@
 import {
+  MarketingTaskContentType,
+  MarketingTaskNetwork,
+} from "@app-template/db/enums";
+import {
   getMarketingTaskNetworkColor,
   getMarketingTaskNetworkColorBg,
   getMarketingTaskTag,
-  MarketingTaskContentType,
-  MarketingTaskNetwork,
-} from "@app-template/db";
+} from "@app-template/db/marketingTaskBrand";
 
 interface Props {
   contentType: MarketingTaskContentType;

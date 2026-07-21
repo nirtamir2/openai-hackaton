@@ -1,4 +1,9 @@
-import { GrowthFeedEntryKind, GrowthIdeaStatus } from "@app-template/db";
+import {
+  GrowthFeedEntryKind,
+  GrowthIdeaStatus,
+  MarketingTaskContentType,
+  MarketingTaskNetwork,
+} from "@app-template/db";
 import type { ProductGrowthFeedEntryModel } from "@app-template/db";
 import { buildIdeaDescription } from "../marketing/buildIdeaDescription";
 
@@ -68,6 +73,8 @@ export interface GrowthAgentIdea {
   title: string;
   meta: string;
   description: string;
+  network: MarketingTaskNetwork | null;
+  contentType: MarketingTaskContentType | null;
   why?: string;
   references?: Array<{ label: string; url: string }>;
   materials?: Array<{ label: string }>;
@@ -80,6 +87,7 @@ export interface GrowthAgentFeedData {
   projects: Array<GrowthAgentProject>;
   ideaStatuses: Record<string, GrowthIdeaStatus>;
   todoDone: Record<string, boolean>;
+  lastGeneratedAt: string | null;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -256,6 +264,37 @@ function mapProject({
   };
 }
 
+function readIdeaTaskMeta(payload: Record<string, unknown>) {
+  const draft = payload.taskDraft;
+
+  if (!isRecord(draft)) {
+    return {
+      network: null,
+      contentType: null,
+    };
+  }
+
+  const network = readString(draft, "network");
+  const contentType = readString(draft, "contentType");
+
+  if (
+    network != null &&
+    contentType != null &&
+    Object.values(MarketingTaskNetwork).includes(network as MarketingTaskNetwork) &&
+    Object.values(MarketingTaskContentType).includes(contentType as MarketingTaskContentType)
+  ) {
+    return {
+      network: network as MarketingTaskNetwork,
+      contentType: contentType as MarketingTaskContentType,
+    };
+  }
+
+  return {
+    network: null,
+    contentType: null,
+  };
+}
+
 function mapIdea({
   entry,
   payload,
@@ -272,6 +311,8 @@ function mapIdea({
   if (title == null || meta == null || description == null) {
     return null;
   }
+
+  const { network, contentType } = readIdeaTaskMeta(payload);
 
   const references = Array.isArray(payload.references)
     ? payload.references.flatMap((reference) => {
@@ -311,6 +352,8 @@ function mapIdea({
     title,
     meta,
     description: buildIdeaDescription({ description }),
+    network,
+    contentType,
     why: readString(payload, "why"),
     references,
     materials,
@@ -340,7 +383,7 @@ function readTodoDone(value: ProductGrowthFeedEntryModel["todoDone"]) {
 
 export function mapGrowthFeedEntries(
   entries: Array<ProductGrowthFeedEntryModel>,
-): GrowthAgentFeedData {
+): Omit<GrowthAgentFeedData, "lastGeneratedAt"> {
   const feedItems: Array<GrowthAgentFeedItem> = [];
   const ideas: Array<GrowthAgentIdea> = [];
   const projects: Array<GrowthAgentProject> = [];

@@ -1,3 +1,5 @@
+import type { MarketingTaskContentType, MarketingTaskNetwork } from "@app-template/db/enums";
+
 export type GrowthAgentDayKey = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
 
 export type GrowthAgentFeedItemType = "reddit" | "post" | "ad" | "newsjack";
@@ -62,6 +64,8 @@ export interface GrowthAgentIdea {
   title: string;
   meta: string;
   description: string;
+  network: MarketingTaskNetwork | null;
+  contentType: MarketingTaskContentType | null;
   why?: string;
   references?: Array<{ label: string; url: string }>;
   materials?: Array<{ label: string }>;

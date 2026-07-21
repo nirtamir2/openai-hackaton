@@ -1,9 +1,9 @@
 import {
-  createMarketingTaskSubtaskId,
   MarketingTaskContentType,
   MarketingTaskNetwork,
   MarketingTaskType,
-} from "@app-template/db";
+} from "@app-template/db/enums";
+import { createMarketingTaskSubtaskId } from "@app-template/db/marketingTaskBrand";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Plus, Trash2 } from "lucide-react";
 import { useState } from "react";

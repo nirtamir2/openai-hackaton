@@ -9,6 +9,7 @@ import type {
   GrowthAgentProject,
 } from "@/components/growth-agent/growthAgentTypes";
 import { SignalButton } from "@/components/home/SignalButton";
+import { TaskTypeBadge } from "@/components/tasks/TaskTypeBadge";
 
 type DrawerContent =
   | { kind: "item"; item: GrowthAgentFeedItem }
@@ -127,9 +128,17 @@ export function GrowthAgentTaskDrawer({
                       {content.item.tag}
                     </span>
                   ) : content.kind === "idea" ? (
-                    <span className="rounded-[5px] bg-[rgba(106,63,209,0.1)] px-[9px] py-1 font-mono text-[11px] font-semibold tracking-[0.2px] text-[#6a3fd1]">
-                      NEW IDEA
-                    </span>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="rounded-[5px] bg-[rgba(106,63,209,0.1)] px-[9px] py-1 font-mono text-[11px] font-semibold tracking-[0.2px] text-[#6a3fd1]">
+                        NEW IDEA
+                      </span>
+                      {content.idea.network != null && content.idea.contentType != null ? (
+                        <TaskTypeBadge
+                          contentType={content.idea.contentType}
+                          network={content.idea.network}
+                        />
+                      ) : null}
+                    </div>
                   ) : (
                     <span
                       className="rounded-[5px] px-[9px] py-1 font-mono text-[11px] font-semibold tracking-[0.2px]"
@@ -549,6 +558,8 @@ function IdeaDrawerBody({
   return (
     <>
       <TaskPreviewSection delayMs={60}>
+        <p className="mb-1 text-[12.5px] text-[rgba(23,20,15,0.45)]">{idea.meta}</p>
+        <p className="mb-4 text-[17px] font-semibold text-[rgba(23,20,15,0.9)]">{idea.title}</p>
         <p className="mb-[22px] line-clamp-2 text-[14.5px] leading-[1.6] text-[rgba(23,20,15,0.85)]">
           {idea.description}
         </p>
