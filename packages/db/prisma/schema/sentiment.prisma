@@ -1,0 +1,37 @@
+enum SentimentLabel {
+  POSITIVE @map("positive")
+  NEGATIVE @map("negative")
+  NEUTRAL  @map("neutral")
+  MIXED    @map("mixed")
+}
+
+enum SentimentSource {
+  REVIEW  @map("review")
+  SURVEY  @map("survey")
+  SUPPORT @map("support")
+  SOCIAL  @map("social")
+  IN_APP  @map("in_app")
+  OTHER   @map("other")
+}
+
+model ProductSentiment {
+  id              String          @id @default(uuid()) @db.Uuid
+  productId       String          @map("product_id") @db.Uuid
+  content         String
+  sentimentLabel  SentimentLabel  @map("sentiment_label")
+  sentimentScore  Float           @map("sentiment_score")
+  confidence      Float
+  source          SentimentSource
+  sourceUrl       String?         @map("source_url")
+  customerName    String?         @map("customer_name")
+  analyzedAt      DateTime        @map("analyzed_at") @db.Timestamptz
+  createdAt       DateTime        @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt       DateTime        @updatedAt @map("updated_at") @db.Timestamptz
+  product         Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([sentimentLabel])
+  @@index([createdAt])
+  @@index([productId, sentimentLabel])
+  @@map("product_sentiments")
+}
