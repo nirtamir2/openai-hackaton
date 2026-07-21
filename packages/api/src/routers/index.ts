@@ -4,6 +4,7 @@ import { z } from "zod";
 import prisma from "@app-template/db";
 import { protectedProcedure, publicProcedure } from "../index";
 import { calendarRouter } from "./calendar";
+import { feedRouter } from "./feed";
 import { onboardingRouter } from "./onboarding";
 import { sentimentRouter } from "./sentiment";
 
@@ -18,6 +19,7 @@ export const appRouter = {
     };
   }),
   calendar: calendarRouter,
+  feed: feedRouter,
   onboarding: onboardingRouter,
   sentiment: sentimentRouter,
   generateMarketingTasks: protectedProcedure

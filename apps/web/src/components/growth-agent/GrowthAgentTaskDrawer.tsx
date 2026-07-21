@@ -6,7 +6,7 @@ import type {
   GrowthAgentFeedItem,
   GrowthAgentIdea,
   GrowthAgentProject,
-} from "@/components/growth-agent/growthAgentMockData";
+} from "@/components/growth-agent/growthAgentTypes";
 import { SignalButton } from "@/components/home/SignalButton";
 
 type DrawerContent =

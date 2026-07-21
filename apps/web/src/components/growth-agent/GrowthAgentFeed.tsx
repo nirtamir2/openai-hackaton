@@ -1,22 +1,22 @@
+import { GrowthIdeaStatus } from "@app-template/db/enums";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Check, Clock } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { GrowthAgentDayPicker } from "@/components/growth-agent/GrowthAgentDayPicker";
 import { GrowthAgentFeedItemRow } from "@/components/growth-agent/GrowthAgentFeedItemRow";
 import { GrowthAgentProjectRow } from "@/components/growth-agent/GrowthAgentProjectRow";
 import { GrowthAgentTaskDrawer } from "@/components/growth-agent/GrowthAgentTaskDrawer";
-import {
-  growthAgentDayNames,
-  growthAgentDays,
-  growthAgentFeedItems,
-  growthAgentIdeas,
-  growthAgentProjects,
-  growthAgentToday,
-  type GrowthAgentDayKey,
-  type GrowthAgentFeedItem,
-  type GrowthAgentIdea,
-  type GrowthAgentProject,
-} from "@/components/growth-agent/growthAgentMockData";
+import { growthAgentDayNames } from "@/components/growth-agent/growthAgentTypes";
+import type {
+  GrowthAgentDayKey,
+  GrowthAgentFeedItem,
+  GrowthAgentIdea,
+  GrowthAgentProject,
+} from "@/components/growth-agent/growthAgentTypes";
+import { getGrowthAgentDays, getGrowthAgentToday } from "@/components/growth-agent/growthAgentWeek";
+import { Loader } from "@/components/layout/Loader";
 import { SignalButton } from "@/components/home/SignalButton";
+import { orpc } from "@/utils/orpc";
 
 type IdeaStatus = "pending" | "approved" | "postponed" | "cancelled";
 
@@ -26,32 +26,133 @@ type DrawerContent =
   | { kind: "idea"; idea: GrowthAgentIdea };
 
 interface Props {
+  productId: string;
   onOpenCountChange: (count: number) => void;
 }
 
-export function GrowthAgentFeed({ onOpenCountChange }: Props) {
+function mapIdeaStatus(status: GrowthIdeaStatus): IdeaStatus {
+  if (status === GrowthIdeaStatus.APPROVED) {
+    return "approved";
+  }
+
+  if (status === GrowthIdeaStatus.POSTPONED) {
+    return "postponed";
+  }
+
+  if (status === GrowthIdeaStatus.CANCELLED) {
+    return "cancelled";
+  }
+
+  return "pending";
+}
+
+function toGrowthIdeaStatus(status: IdeaStatus): GrowthIdeaStatus {
+  if (status === "approved") {
+    return GrowthIdeaStatus.APPROVED;
+  }
+
+  if (status === "postponed") {
+    return GrowthIdeaStatus.POSTPONED;
+  }
+
+  if (status === "cancelled") {
+    return GrowthIdeaStatus.CANCELLED;
+  }
+
+  return GrowthIdeaStatus.PENDING;
+}
+
+export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
+  const queryClient = useQueryClient();
+  const growthAgentToday = getGrowthAgentToday();
+  const growthAgentDays = getGrowthAgentDays();
   const [selectedDay, setSelectedDay] = useState<GrowthAgentDayKey>(growthAgentToday);
-  const [completedIds, setCompletedIds] = useState<Record<string, boolean>>({});
-  const [todoDone, setTodoDone] = useState<Record<string, boolean>>({});
-  const [ideaStatus, setIdeaStatus] = useState<Record<string, IdeaStatus>>({});
+  const [completedOverrides, setCompletedOverrides] = useState<Record<string, boolean>>({});
+  const [ideaStatusOverrides, setIdeaStatusOverrides] = useState<Record<string, IdeaStatus>>({});
+  const [todoDoneOverrides, setTodoDoneOverrides] = useState<Record<string, boolean>>({});
   const [drawerContent, setDrawerContent] = useState<DrawerContent | null>(null);
 
+  const feedQuery = useQuery(
+    orpc.feed.getFeed.queryOptions({
+      input: { productId },
+    }),
+  );
+
+  const invalidateFeed = async () => {
+    await queryClient.invalidateQueries({
+      queryKey: orpc.feed.getFeed.key({ input: { productId } }),
+    });
+  };
+
+  const setItemCompletedMutation = useMutation(
+    orpc.feed.setItemCompleted.mutationOptions({
+      onSuccess: async () => {
+        await invalidateFeed();
+      },
+    }),
+  );
+
+  const setIdeaStatusMutation = useMutation(
+    orpc.feed.setIdeaStatus.mutationOptions({
+      onSuccess: async () => {
+        await invalidateFeed();
+      },
+    }),
+  );
+
+  const setTodoDoneMutation = useMutation(
+    orpc.feed.setTodoDone.mutationOptions({
+      onSuccess: async () => {
+        await invalidateFeed();
+      },
+    }),
+  );
+
+  const feedItems = feedQuery.data?.feedItems ?? [];
+  const ideas = feedQuery.data?.ideas ?? [];
+  const projects = feedQuery.data?.projects ?? [];
+
+  const ideaStatus = useMemo(() => {
+    const statuses: Record<string, IdeaStatus> = {};
+
+    for (const idea of ideas) {
+      const override = ideaStatusOverrides[idea.id];
+      const serverStatus = feedQuery.data?.ideaStatuses[idea.id];
+
+      statuses[idea.id] =
+        override ??
+        (serverStatus != null ? mapIdeaStatus(serverStatus) : "pending");
+    }
+
+    return statuses;
+  }, [feedQuery.data?.ideaStatuses, ideaStatusOverrides, ideas]);
+
+  const todoDone = useMemo(() => {
+    return {
+      ...(feedQuery.data?.todoDone ?? {}),
+      ...todoDoneOverrides,
+    };
+  }, [feedQuery.data?.todoDone, todoDoneOverrides]);
+
   function isCompleted(item: GrowthAgentFeedItem) {
-    const override = completedIds[item.id];
-    return override != null ? override : item.defaultCompleted === true;
+    const override = completedOverrides[item.id];
+
+    if (override != null) {
+      return override;
+    }
+
+    return item.defaultCompleted === true;
   }
 
   const openCount = useMemo(() => {
-    return growthAgentFeedItems.filter((item) => !isCompleted(item)).length;
-  }, [completedIds]);
+    return feedItems.filter((item) => !isCompleted(item)).length;
+  }, [completedOverrides, feedItems]);
 
   useEffect(() => {
     onOpenCountChange(openCount);
   }, [openCount, onOpenCountChange]);
 
-  const liveItem = growthAgentFeedItems.find(
-    (item) => item.live === true && !isCompleted(item),
-  );
+  const liveItem = feedItems.find((item) => item.live === true && !isCompleted(item));
 
   const dayDots = useMemo(() => {
     const dots: Record<GrowthAgentDayKey, Array<string>> = {
@@ -64,31 +165,65 @@ export function GrowthAgentFeed({ onOpenCountChange }: Props) {
       sun: [],
     };
 
-    for (const item of growthAgentFeedItems) {
+    for (const item of feedItems) {
       dots[item.day].push(item.color);
     }
 
     return dots;
-  }, []);
+  }, [feedItems]);
 
-  const visibleItems = growthAgentFeedItems.filter((item) => item.day === selectedDay);
+  const visibleItems = feedItems.filter((item) => item.day === selectedDay);
 
-  const pendingIdeas = growthAgentIdeas.filter(
-    (idea) => (ideaStatus[idea.id] ?? "pending") === "pending",
-  );
-  const postponedIdeas = growthAgentIdeas.filter(
-    (idea) => (ideaStatus[idea.id] ?? "pending") === "postponed",
-  );
-  const approvedIdeas = growthAgentIdeas.filter(
-    (idea) => (ideaStatus[idea.id] ?? "pending") === "approved",
-  );
+  const pendingIdeas = ideas.filter((idea) => (ideaStatus[idea.id] ?? "pending") === "pending");
+  const postponedIdeas = ideas.filter((idea) => (ideaStatus[idea.id] ?? "pending") === "postponed");
+  const approvedIdeas = ideas.filter((idea) => (ideaStatus[idea.id] ?? "pending") === "approved");
 
   function getProjectDoneCount(project: GrowthAgentProject) {
     return project.todos.filter((todo) => todoDone[`${project.id}:${todo.id}`] ?? todo.done).length;
   }
 
+  function setCompleted({ entryId, completed }: { entryId: string; completed: boolean }) {
+    setCompletedOverrides((previous) => ({ ...previous, [entryId]: completed }));
+    setItemCompletedMutation.mutate({ productId, entryId, completed });
+  }
+
+  function updateIdeaStatus({ entryId, status }: { entryId: string; status: IdeaStatus }) {
+    setIdeaStatusOverrides((previous) => ({ ...previous, [entryId]: status }));
+    setIdeaStatusMutation.mutate({
+      productId,
+      entryId,
+      status: toGrowthIdeaStatus(status),
+    });
+  }
+
+  function toggleTodo({
+    projectId,
+    todoId,
+    done,
+  }: {
+    projectId: string;
+    todoId: string;
+    done: boolean;
+  }) {
+    const key = `${projectId}:${todoId}`;
+    setTodoDoneOverrides((previous) => ({ ...previous, [key]: done }));
+    setTodoDoneMutation.mutate({ productId, entryId: projectId, todoId, done });
+  }
+
   const selectedDayLabel =
     growthAgentDayNames[selectedDay] + (selectedDay === growthAgentToday ? " · Today" : "");
+
+  if (feedQuery.isLoading) {
+    return <Loader />;
+  }
+
+  if (feedQuery.isError) {
+    return (
+      <p className="py-[30px] text-center text-[13.5px] text-[rgba(23,20,15,0.55)]">
+        Could not load your growth feed. Check that the database is running and seeded.
+      </p>
+    );
+  }
 
   return (
     <div className="flex flex-col">
@@ -124,6 +259,7 @@ export function GrowthAgentFeed({ onOpenCountChange }: Props) {
           days={growthAgentDays}
           selectedDay={selectedDay}
           dayDots={dayDots}
+          todayKey={growthAgentToday}
           onSelectDay={setSelectedDay}
         />
       </div>
@@ -139,10 +275,7 @@ export function GrowthAgentFeed({ onOpenCountChange }: Props) {
             item={item}
             completed={isCompleted(item)}
             onToggle={() => {
-              setCompletedIds((previous) => ({
-                ...previous,
-                [item.id]: !isCompleted(item),
-              }));
+              setCompleted({ entryId: item.id, completed: !isCompleted(item) });
             }}
             onOpen={() => {
               setDrawerContent({ kind: "item", item });
@@ -190,7 +323,7 @@ export function GrowthAgentFeed({ onOpenCountChange }: Props) {
                 variant="primary"
                 onClick={(event) => {
                   event.stopPropagation();
-                  setIdeaStatus((previous) => ({ ...previous, [idea.id]: "approved" }));
+                  updateIdeaStatus({ entryId: idea.id, status: "approved" });
                 }}
               >
                 <Check className="size-[13px] stroke-[3]" />
@@ -200,7 +333,7 @@ export function GrowthAgentFeed({ onOpenCountChange }: Props) {
                 variant="secondary"
                 onClick={(event) => {
                   event.stopPropagation();
-                  setIdeaStatus((previous) => ({ ...previous, [idea.id]: "postponed" }));
+                  updateIdeaStatus({ entryId: idea.id, status: "postponed" });
                 }}
               >
                 <Clock className="size-[13px]" />
@@ -210,7 +343,7 @@ export function GrowthAgentFeed({ onOpenCountChange }: Props) {
                 variant="tertiary"
                 onClick={(event) => {
                   event.stopPropagation();
-                  setIdeaStatus((previous) => ({ ...previous, [idea.id]: "cancelled" }));
+                  updateIdeaStatus({ entryId: idea.id, status: "cancelled" });
                 }}
               >
                 Not interested
@@ -231,7 +364,7 @@ export function GrowthAgentFeed({ onOpenCountChange }: Props) {
             <button
               type="button"
               onClick={() => {
-                setIdeaStatus((previous) => ({ ...previous, [idea.id]: "pending" }));
+                updateIdeaStatus({ entryId: idea.id, status: "pending" });
               }}
               className="shrink-0 text-[12.5px] font-semibold whitespace-nowrap text-[#6a3fd1]"
             >
@@ -250,7 +383,10 @@ export function GrowthAgentFeed({ onOpenCountChange }: Props) {
               colorBg: "rgba(106,63,209,0.1)",
               title: idea.title,
               meta: idea.meta,
-              todos: idea.todos,
+              todos: idea.todos.map((todo) => ({
+                ...todo,
+                done: todoDone[`${idea.id}:${todo.id}`] ?? todo.done,
+              })),
             }}
             doneCount={getProjectDoneCount({
               id: idea.id,
@@ -259,7 +395,10 @@ export function GrowthAgentFeed({ onOpenCountChange }: Props) {
               colorBg: "rgba(106,63,209,0.1)",
               title: idea.title,
               meta: idea.meta,
-              todos: idea.todos,
+              todos: idea.todos.map((todo) => ({
+                ...todo,
+                done: todoDone[`${idea.id}:${todo.id}`] ?? todo.done,
+              })),
             })}
             onOpen={() => {
               setDrawerContent({
@@ -273,20 +412,44 @@ export function GrowthAgentFeed({ onOpenCountChange }: Props) {
                   meta: idea.meta,
                   description: idea.description,
                   why: idea.why,
-                  todos: idea.todos,
+                  todos: idea.todos.map((todo) => ({
+                    ...todo,
+                    done: todoDone[`${idea.id}:${todo.id}`] ?? todo.done,
+                  })),
                 },
               });
             }}
           />
         ))}
 
-        {growthAgentProjects.map((project) => (
+        {projects.map((project) => (
           <GrowthAgentProjectRow
             key={project.id}
-            project={project}
-            doneCount={getProjectDoneCount(project)}
+            project={{
+              ...project,
+              todos: project.todos.map((todo) => ({
+                ...todo,
+                done: todoDone[`${project.id}:${todo.id}`] ?? todo.done,
+              })),
+            }}
+            doneCount={getProjectDoneCount({
+              ...project,
+              todos: project.todos.map((todo) => ({
+                ...todo,
+                done: todoDone[`${project.id}:${todo.id}`] ?? todo.done,
+              })),
+            })}
             onOpen={() => {
-              setDrawerContent({ kind: "project", project });
+              setDrawerContent({
+                kind: "project",
+                project: {
+                  ...project,
+                  todos: project.todos.map((todo) => ({
+                    ...todo,
+                    done: todoDone[`${project.id}:${todo.id}`] ?? todo.done,
+                  })),
+                },
+              });
             }}
           />
         ))}
@@ -299,26 +462,24 @@ export function GrowthAgentFeed({ onOpenCountChange }: Props) {
           setDrawerContent(null);
         }}
         onMarkComplete={(id) => {
-          setCompletedIds((previous) => ({ ...previous, [id]: true }));
+          setCompleted({ entryId: id, completed: true });
           setDrawerContent(null);
         }}
         onToggleTodo={(projectId, todoId) => {
           const key = `${projectId}:${todoId}`;
-          setTodoDone((previous) => ({
-            ...previous,
-            [key]: !(previous[key] ?? false),
-          }));
+          const currentDone = todoDone[key] ?? false;
+          toggleTodo({ projectId, todoId, done: !currentDone });
         }}
         onApproveIdea={(id) => {
-          setIdeaStatus((previous) => ({ ...previous, [id]: "approved" }));
+          updateIdeaStatus({ entryId: id, status: "approved" });
           setDrawerContent(null);
         }}
         onPostponeIdea={(id) => {
-          setIdeaStatus((previous) => ({ ...previous, [id]: "postponed" }));
+          updateIdeaStatus({ entryId: id, status: "postponed" });
           setDrawerContent(null);
         }}
         onCancelIdea={(id) => {
-          setIdeaStatus((previous) => ({ ...previous, [id]: "cancelled" }));
+          updateIdeaStatus({ entryId: id, status: "cancelled" });
           setDrawerContent(null);
         }}
       />

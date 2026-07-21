@@ -2,17 +2,15 @@ import { useState } from "react";
 import { GrowthAgentFeed } from "@/components/growth-agent/GrowthAgentFeed";
 import { GrowthAgentLayout, type GrowthAgentTab } from "@/components/growth-agent/GrowthAgentLayout";
 import { GrowthAgentOverview } from "@/components/growth-agent/GrowthAgentOverview";
-import { growthAgentFeedItems } from "@/components/growth-agent/growthAgentMockData";
 
 interface Props {
   companyName: string;
+  productId: string;
 }
 
-export function GrowthAgentDashboard({ companyName }: Props) {
+export function GrowthAgentDashboard({ companyName, productId }: Props) {
   const [activeTab, setActiveTab] = useState<GrowthAgentTab>("feed");
-  const [openTaskCount, setOpenTaskCount] = useState(
-    growthAgentFeedItems.filter((item) => item.defaultCompleted !== true).length,
-  );
+  const [openTaskCount, setOpenTaskCount] = useState(0);
 
   return (
     <GrowthAgentLayout
@@ -23,6 +21,7 @@ export function GrowthAgentDashboard({ companyName }: Props) {
     >
       {activeTab === "feed" ? (
         <GrowthAgentFeed
+          productId={productId}
           onOpenCountChange={(count) => {
             setOpenTaskCount(count);
           }}

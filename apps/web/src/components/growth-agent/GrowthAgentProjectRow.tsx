@@ -1,5 +1,5 @@
 import { Check } from "lucide-react";
-import type { GrowthAgentProject } from "@/components/growth-agent/growthAgentMockData";
+import type { GrowthAgentProject } from "@/components/growth-agent/growthAgentTypes";
 
 interface Props {
   project: GrowthAgentProject;

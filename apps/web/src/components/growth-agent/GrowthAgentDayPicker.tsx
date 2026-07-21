@@ -1,20 +1,20 @@
 import clsx from "clsx";
-import type { GrowthAgentDay, GrowthAgentDayKey } from "@/components/growth-agent/growthAgentMockData";
-import { growthAgentToday } from "@/components/growth-agent/growthAgentMockData";
+import type { GrowthAgentDay, GrowthAgentDayKey } from "@/components/growth-agent/growthAgentTypes";
 
 interface Props {
   days: Array<GrowthAgentDay>;
   selectedDay: GrowthAgentDayKey;
   dayDots: Record<GrowthAgentDayKey, Array<string>>;
+  todayKey: GrowthAgentDayKey;
   onSelectDay: (day: GrowthAgentDayKey) => void;
 }
 
-export function GrowthAgentDayPicker({ days, selectedDay, dayDots, onSelectDay }: Props) {
+export function GrowthAgentDayPicker({ days, selectedDay, dayDots, todayKey, onSelectDay }: Props) {
   return (
     <div className="grid grid-cols-7 gap-2">
       {days.map((day) => {
         const isActive = day.key === selectedDay;
-        const isToday = day.key === growthAgentToday;
+        const isToday = day.key === todayKey;
 
         return (
           <button

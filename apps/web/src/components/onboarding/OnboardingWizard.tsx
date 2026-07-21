@@ -1,7 +1,7 @@
 import { MOCK_PRODUCT_ID } from "@app-template/db/mockProductId";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { getCompanyNameFromUrl } from "@/components/growth-agent/growthAgentMockData";
+import { getCompanyNameFromUrl } from "@/components/growth-agent/growthAgentTypes";
 import { OnboardingLayout } from "@/components/onboarding/OnboardingLayout";
 import { createInitialOnboardingState } from "@/components/onboarding/onboardingMockData";
 import { onboardingSteps } from "@/components/onboarding/onboardingSteps";

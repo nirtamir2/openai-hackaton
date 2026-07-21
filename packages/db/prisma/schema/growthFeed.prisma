@@ -1,0 +1,33 @@
+enum GrowthFeedEntryKind {
+  FEED_ITEM @map("feed_item")
+  IDEA      @map("idea")
+  PROJECT   @map("project")
+}
+
+enum GrowthIdeaStatus {
+  PENDING   @map("pending")
+  APPROVED  @map("approved")
+  POSTPONED @map("postponed")
+  CANCELLED @map("cancelled")
+}
+
+model ProductGrowthFeedEntry {
+  id         String               @id @default(uuid()) @db.Uuid
+  productId  String               @map("product_id") @db.Uuid
+  externalId String               @map("external_id")
+  kind       GrowthFeedEntryKind
+  dayKey     String?              @map("day_key")
+  sortOrder  Int                  @default(0) @map("sort_order")
+  completed  Boolean              @default(false)
+  ideaStatus GrowthIdeaStatus?    @map("idea_status")
+  todoDone   Json                 @default("{}") @map("todo_done")
+  payload    Json
+  createdAt  DateTime             @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt  DateTime             @updatedAt @map("updated_at") @db.Timestamptz
+  product    Product              @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, externalId])
+  @@index([productId, kind])
+  @@index([productId, dayKey])
+  @@map("product_growth_feed_entries")
+}

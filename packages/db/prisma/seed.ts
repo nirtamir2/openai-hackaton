@@ -5,6 +5,7 @@ import { PrismaPg } from "@prisma/adapter-pg";
 import dotenv from "dotenv";
 import { PrismaClient } from "./generated/client";
 import { MOCK_PRODUCT_ID, getMockProductData } from "./seed/mockProductData";
+import { getMockGrowthFeedData } from "./seed/mockGrowthFeedData";
 
 const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
 
@@ -53,6 +54,17 @@ async function seedMockProduct() {
           },
           sentiments: {
             create: [...mockProductData.sentiments],
+          },
+          growthFeedEntries: {
+            create: getMockGrowthFeedData().map((entry) => ({
+              externalId: entry.externalId,
+              kind: entry.kind,
+              dayKey: entry.dayKey,
+              sortOrder: entry.sortOrder,
+              completed: entry.completed,
+              ideaStatus: entry.ideaStatus,
+              payload: entry.payload,
+            })),
           },
         },
       });

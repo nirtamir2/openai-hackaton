@@ -1,6 +1,6 @@
 import clsx from "clsx";
 import { Check } from "lucide-react";
-import type { GrowthAgentFeedItem } from "@/components/growth-agent/growthAgentMockData";
+import type { GrowthAgentFeedItem } from "@/components/growth-agent/growthAgentTypes";
 
 interface Props {
   item: GrowthAgentFeedItem;

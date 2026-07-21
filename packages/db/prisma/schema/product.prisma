@@ -13,6 +13,7 @@ model Product {
   updatedAt          DateTime               @updatedAt @map("updated_at") @db.Timestamptz
   marketingTasks     ProductMarketingTask[]
   sentiments         ProductSentiment[]
+  growthFeedEntries  ProductGrowthFeedEntry[]
 
   @@map("products")
 }

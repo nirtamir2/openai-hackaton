@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { MOCK_PRODUCT_ID } from "@app-template/db/mockProductId";
 import { GrowthAgentDashboard } from "@/components/growth-agent/GrowthAgentDashboard";
-import { getCompanyNameFromUrl } from "@/components/growth-agent/growthAgentMockData";
+import { getCompanyNameFromUrl } from "@/components/growth-agent/growthAgentTypes";
 import { getOnboardingCompanyName } from "@/components/onboarding/onboardingStorage";
 import { buildSeo, withAppName } from "@/utils/buildSeo";
 
@@ -23,13 +24,26 @@ export const Route = createFileRoute("/products/$productId/feed")({
       ],
     };
   },
+  loader: async ({ context, params }) => {
+    await context.queryClient.ensureQueryData(
+      context.orpc.feed.getFeed.queryOptions({
+        input: { productId: params.productId },
+      }),
+    );
+  },
   component: GrowthAgentFeedPage,
 });
 
 function GrowthAgentFeedPage() {
+  const { productId } = Route.useParams();
   const storedCompanyName = getOnboardingCompanyName();
   const companyName =
     storedCompanyName.length > 0 ? storedCompanyName : getCompanyNameFromUrl({ url: "" });
 
-  return <GrowthAgentDashboard companyName={companyName} />;
+  return (
+    <GrowthAgentDashboard
+      companyName={companyName}
+      productId={productId.length > 0 ? productId : MOCK_PRODUCT_ID}
+    />
+  );
 }
