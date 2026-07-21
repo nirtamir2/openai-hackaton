@@ -30,6 +30,9 @@ catalogs:
     "@takumi-rs/core": ^1.1.2
     "@takumi-rs/helpers": ^1.1.2
     "@takumi-rs/image-response": ^1.1.2
+    "@tanstack/ai": ^0.42.0
+    "@tanstack/ai-openai": ^0.17.1
+    "@tanstack/ai-react": ^0.18.1
     "@tanstack/devtools-vite": ^0.6.0
     "@tanstack/eslint-plugin-query": ^5.100.5
     "@tanstack/react-devtools": ^0.10.2
@@ -74,8 +77,8 @@ catalogs:
     react-dom: 19.2.5
     shadcn: ^4.5.0
     sonner: ^2.0.7
-    tailwind-merge: ^3.5.0
     tailwindcss: ^4.2.4
+    tsx: ^4.20.5
     tw-animate-css: ^1.4.0
     type-fest: ^5.6.0
     typescript: ^6.0.3
