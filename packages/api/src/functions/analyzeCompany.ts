@@ -17,7 +17,7 @@ export async function analyzeCompany({ website }: Props) {
 
   const openai = new OpenAI({ apiKey });
   const response = await openai.responses.parse({
-    model: process.env.OPENAI_MODEL ?? "gpt-5.6-terra",
+    model: process.env.OPENAI_MODEL ?? "gpt-4.1-mini",
     instructions: companyAnalysisPrompt,
     input: `Analyze this company website: ${website}`,
     tools: [{ type: "web_search" }],
