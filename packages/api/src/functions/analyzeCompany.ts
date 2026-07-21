@@ -17,12 +17,11 @@ export async function analyzeCompany({ website }: Props) {
 
   const openai = new OpenAI({ apiKey });
   const response = await openai.responses.parse({
-    model: process.env.OPENAI_MODEL ?? "gpt-4.1-mini",
+    model: process.env.OPENAI_MODEL ?? "gpt-4o",
     instructions: companyAnalysisPrompt,
     input: `Analyze this company website: ${website}`,
     tools: [{ type: "web_search", search_context_size: "low" }],
     text: {
-      verbosity: "low",
       format: zodTextFormat(companyAnalysisSchema, "company_analysis"),
     },
   });
