@@ -118,12 +118,11 @@ const marketingTaskSchema = z.object({
       "A short headline of only a few words (max 8 words). Name the channel and core action. No full sentences, periods, or draft copy.",
   }),
   description: z.preprocess(
-    (value) =>
-      typeof value === "string" ? value.trim().slice(0, marketingTaskDescriptionMaxLength) : value,
+    (value) => (typeof value === "string" ? value.trim() : value),
     z.string().min(20).max(marketingTaskDescriptionMaxLength),
   ).meta({
     description:
-      "A concise 1-2 line creative brief separate from the title. Line 1: channel and deliverable. Line 2: angle and why. For reply/post tasks, keep this brief short — the actual copy is generated separately. No bullet lists, paragraphs, or draft copy. Do not include customer names or URLs.",
+      `A concise creative brief separate from the title. Max ${String(marketingTaskDescriptionMaxLines)} lines and ${String(marketingTaskDescriptionMaxLength)} characters total. Line 1: channel and deliverable. Line 2: angle and why. For reply/post tasks, keep this brief short — the actual copy is generated separately. No bullet lists, paragraphs, or draft copy. Do not include customer names or URLs.`,
   }),
   taskType: z.enum(MarketingTaskType).meta({
     description:
@@ -381,7 +380,7 @@ function buildTodayTaskInstructions({
 
   return [
     "Today's tasks must be specific, ready-to-execute content ideas — not vague marketing advice.",
-    "Every task needs a short title (few words only) and a separate description (2 lines max).",
+    "Every task needs a short title (few words only) and a separate description (2 lines max, 280 characters).",
     "For reply and post tasks, the description is only a short brief — the full reply or post is generated separately.",
     "Task types to prioritize:",
     `- ${taskTypeExamples}`,
@@ -447,10 +446,10 @@ function buildMarketingTaskSystemPrompt({
     "Brevity rules (strict):",
     "- Every task needs a separate title and description.",
     `- title: only a few words (max ${String(marketingTaskTitleMaxWords)} words). A short headline naming the channel and action. Never a full sentence.`,
-    `- description: 2 lines max with at most one newline between them. Short sentences only.`,
+    `- description: max ${String(marketingTaskDescriptionMaxLines)} lines (${String(marketingTaskDescriptionMaxLength)} characters total) with at most one newline between them. Short sentences only. Never exceed these limits.`,
     "- Every subtask/todo is a single one-line step with no line breaks.",
     "- For reply and post tasks: the description is only a 2-line brief (channel, context, angle). Never include the actual reply or post copy in the description.",
-    "Every task description must name the channel, specify the deliverable, tie to product evidence or sentiment, and match brand voice — all within 2 lines.",
+    "Every task description must name the channel, specify the deliverable, tie to product evidence or sentiment, and match brand voice — all within 2 lines and 280 characters.",
     trendInstructions,
     "Prioritize the strongest recent customer risks and opportunities. If there is no recent sentiment, base tasks on documented positioning, strengths, weaknesses, and competitors without claiming customer demand.",
     "Never create product-engineering, sales operations, customer support, hiring, legal, finance, or internal tooling tasks.",
@@ -569,6 +568,10 @@ function getGeneratedTaskValidationFailure({
 
   if (countMarketingTaskLines({ text: description }) > marketingTaskDescriptionMaxLines) {
     return "description exceeds line limit";
+  }
+
+  if (description.length > marketingTaskDescriptionMaxLength) {
+    return "description exceeds character limit";
   }
 
   if (Number.isNaN(targetDate.getTime())) {

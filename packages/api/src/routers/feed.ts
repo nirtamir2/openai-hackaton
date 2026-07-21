@@ -80,7 +80,7 @@ export const feedRouter = {
       throw new ORPCError("NOT_FOUND");
     }
 
-    await syncMarketingTasksToGrowthFeed({ productId: input.productId, enrich: false });
+    await syncMarketingTasksToGrowthFeed({ productId: input.productId, enrich: true });
 
     await prisma.productGrowthFeedEntry.deleteMany({
       where: {

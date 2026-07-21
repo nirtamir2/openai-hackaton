@@ -77,7 +77,7 @@ export function GrowthAgentFeedItemRow({ item, index, completed, onToggle, onOpe
         {item.description != null && item.description !== item.title ? (
           <p
             className={clsx(
-              "mt-0.5 line-clamp-2 text-[12.5px] leading-[1.45] text-[rgba(23,20,15,0.5)]",
+              "mt-0.5 whitespace-pre-line text-[12.5px] leading-[1.45] text-[rgba(23,20,15,0.5)]",
               completed ? "line-through" : "no-underline",
             )}
           >

@@ -128,55 +128,60 @@ export const appRouter = {
         });
       }
 
-      const marketingTasks = shouldGenerateTasks
-        ? await Promise.all(
-            shortTasks.map(async (task) =>
-              createProductMarketingTask({
-                productId: marketSentiment.product.id,
-                title: task.title,
-                description: task.description,
-                taskType: task.taskType,
-                contentType: task.contentType,
-                network: task.network,
-                subtasks: task.subtasks,
-                priority: task.priority,
-                targetDate: task.targetDate,
-                scheduledStart: task.scheduledStart,
-                scheduledEnd: task.scheduledEnd,
-                trendId: input.trendId ?? null,
-              }),
-            ),
-          )
-        : [];
+      const [marketingTasks, ideas] = await Promise.all([
+        shouldGenerateTasks
+          ? (async () => {
+              const createdTasks = await Promise.all(
+                shortTasks.map(async (task) =>
+                  createProductMarketingTask({
+                    productId: marketSentiment.product.id,
+                    title: task.title,
+                    description: task.description,
+                    taskType: task.taskType,
+                    contentType: task.contentType,
+                    network: task.network,
+                    subtasks: task.subtasks,
+                    priority: task.priority,
+                    targetDate: task.targetDate,
+                    scheduledStart: task.scheduledStart,
+                    scheduledEnd: task.scheduledEnd,
+                    trendId: input.trendId ?? null,
+                  }),
+                ),
+              );
 
-      if (shouldGenerateTasks) {
-        await Promise.all(
-          marketingTasks.map(async (task) => syncMarketingTaskToGrowthFeed(task, null)),
-        );
-      }
+              await Promise.all(
+                createdTasks.map(async (task) =>
+                  syncMarketingTaskToGrowthFeed(task, generationContext),
+                ),
+              );
 
-      const ideas = shouldGenerateIdeas
-        ? await Promise.all(
-            longTasks.map(async (task) =>
-              createGrowthFeedIdea({
-                productId: marketSentiment.product.id,
-                task: {
-                  title: task.title,
-                  description: task.description,
-                  contentType: task.contentType,
-                  network: task.network,
-                  videoHook: task.videoHook ?? "",
-                  subtasks: task.subtasks,
-                  priority: task.priority,
-                  targetDate: task.targetDate,
-                  scheduledStart: task.scheduledStart,
-                  scheduledEnd: task.scheduledEnd,
-                  trendId: input.trendId ?? null,
-                },
-              }),
-            ),
-          )
-        : [];
+              return createdTasks;
+            })()
+          : Promise.resolve([]),
+        shouldGenerateIdeas
+          ? Promise.all(
+              longTasks.map(async (task) =>
+                createGrowthFeedIdea({
+                  productId: marketSentiment.product.id,
+                  task: {
+                    title: task.title,
+                    description: task.description,
+                    contentType: task.contentType,
+                    network: task.network,
+                    videoHook: task.videoHook ?? "",
+                    subtasks: task.subtasks,
+                    priority: task.priority,
+                    targetDate: task.targetDate,
+                    scheduledStart: task.scheduledStart,
+                    scheduledEnd: task.scheduledEnd,
+                    trendId: input.trendId ?? null,
+                  },
+                }),
+              ),
+            )
+          : Promise.resolve([]),
+      ]);
 
       const lastGeneratedAt = new Date();
 

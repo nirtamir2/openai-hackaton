@@ -64,11 +64,36 @@ function TaskPreviewSection({
   );
 }
 
-function WhyBlock({ text }: { text: string }) {
+function RedditReplyConversation({
+  quote,
+  reply,
+}: {
+  quote: string | undefined;
+  reply: string | undefined;
+}) {
   return (
-    <div className="mb-[18px] rounded-[10px] border border-[rgba(23,20,15,0.08)] bg-[#f7f5f1] p-4">
-      <DrawerSectionLabel>Why I'm suggesting this</DrawerSectionLabel>
-      <p className="text-[13.5px] leading-[1.6] text-[rgba(23,20,15,0.75)]">{text}</p>
+    <div className="mb-4 flex flex-col gap-3">
+      {quote != null ? (
+        <div className="flex justify-start">
+          <div className="max-w-[88%] rounded-[14px] rounded-tl-[4px] border border-[rgba(23,20,15,0.08)] bg-[#f7f5f1] px-3.5 py-2.5">
+            <p className="text-[13px] leading-[1.5] whitespace-pre-line text-[rgba(23,20,15,0.75)]">
+              {quote}
+            </p>
+          </div>
+        </div>
+      ) : null}
+      {reply != null ? (
+        <div className="flex flex-col items-end gap-1.5">
+          <p className="font-mono text-[10px] font-semibold tracking-[0.3px] text-[rgba(23,20,15,0.4)] uppercase">
+            Your reply
+          </p>
+          <div className="max-w-[88%] rounded-[14px] rounded-tr-[4px] bg-[#c9440e] px-3.5 py-2.5 shadow-[0_2px_8px_rgba(201,68,14,0.18)]">
+            <p className="text-[13.5px] leading-[1.45] font-medium whitespace-pre-line text-white">
+              {reply}
+            </p>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -271,28 +296,17 @@ function ItemDrawerBody({
 
       {taskDescription != null && taskDescription !== item.title ? (
         <TaskPreviewSection delayMs={90}>
-          <p className="mb-5 line-clamp-2 text-[15px] leading-[1.6] whitespace-pre-line text-[rgba(23,20,15,0.85)]">
+          <p className="mb-5 text-[15px] leading-[1.6] whitespace-pre-line text-[rgba(23,20,15,0.85)]">
             {taskDescription}
           </p>
-        </TaskPreviewSection>
-      ) : null}
-
-      {item.why != null && item.why !== taskDescription ? (
-        <TaskPreviewSection delayMs={120}>
-          <WhyBlock text={item.why} />
         </TaskPreviewSection>
       ) : null}
 
       {item.type === "reddit" ? (
         <>
           <TaskPreviewSection delayMs={180}>
-            <p className="mb-5 text-[15px] leading-[1.6] text-[rgba(23,20,15,0.85)]">{item.quote}</p>
-          </TaskPreviewSection>
-          <TaskPreviewSection delayMs={240}>
-            <div className="mb-4 rounded-[10px] border border-[rgba(23,20,15,0.08)] bg-[#f7f5f1] p-4">
-              <DrawerSectionLabel>Drafted reply</DrawerSectionLabel>
-              <p className="text-sm leading-[1.6] text-[rgba(23,20,15,0.85)]">{item.reply}</p>
-            </div>
+            <DrawerSectionLabel>Thread preview</DrawerSectionLabel>
+            <RedditReplyConversation quote={item.quote} reply={item.reply} />
           </TaskPreviewSection>
           <TaskPreviewSection delayMs={300}>
             <div className="mb-[18px] flex flex-wrap gap-2.5">
@@ -485,12 +499,6 @@ function ProjectDrawerBody({
         </TaskPreviewSection>
       ) : null}
 
-      {project.why != null ? (
-        <TaskPreviewSection delayMs={120}>
-          <WhyBlock text={project.why} />
-        </TaskPreviewSection>
-      ) : null}
-
       {project.todos.length > 0 ? (
         <TaskPreviewSection delayMs={180}>
           <>
@@ -570,12 +578,6 @@ function IdeaDrawerBody({
           {idea.description}
         </p>
       </TaskPreviewSection>
-
-      {idea.why != null ? (
-        <TaskPreviewSection delayMs={120}>
-          <WhyBlock text={idea.why} />
-        </TaskPreviewSection>
-      ) : null}
 
       {idea.todos.length > 0 ? (
         <TaskPreviewSection delayMs={180}>

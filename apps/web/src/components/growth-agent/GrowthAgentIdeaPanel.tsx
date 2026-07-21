@@ -54,7 +54,7 @@ export function GrowthAgentIdeaPanel({
           </div>
           <p className="mt-1.5 text-[15px] font-semibold text-[rgba(23,20,15,0.9)]">{idea.title}</p>
           <p className="mt-1 text-xs text-[rgba(23,20,15,0.42)]">{idea.meta}</p>
-          <p className="mt-2.5 mb-4 line-clamp-2 text-sm leading-[1.55] text-[rgba(23,20,15,0.75)]">
+          <p className="mt-2.5 mb-4 whitespace-pre-line text-sm leading-[1.55] text-[rgba(23,20,15,0.75)]">
             {idea.description}
           </p>
           <div className="flex flex-wrap items-center gap-2.5">

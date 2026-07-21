@@ -61,19 +61,12 @@ export function normalizeMarketingTaskDescription({ description }: { description
 
   const lines = trimmed
     .split(/\n/)
-    .map((line) => line.trim())
-    .filter((line) => line.length > 0)
-    .slice(0, marketingTaskDescriptionMaxLines);
+    .map((line) => line.trim().replace(/\s+/g, " "))
+    .filter((line) => line.length > 0);
 
   if (lines.length === 0) {
     return "";
   }
 
-  const joined = lines.join("\n");
-
-  if (joined.length <= marketingTaskDescriptionMaxLength) {
-    return joined;
-  }
-
-  return truncateAtWordBoundary({ text: joined, maxLength: marketingTaskDescriptionMaxLength });
+  return lines.join("\n");
 }
