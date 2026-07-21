@@ -20,8 +20,9 @@ export async function analyzeCompany({ website }: Props) {
     model: process.env.OPENAI_MODEL ?? "gpt-4.1-mini",
     instructions: companyAnalysisPrompt,
     input: `Analyze this company website: ${website}`,
-    tools: [{ type: "web_search" }],
+    tools: [{ type: "web_search", search_context_size: "low" }],
     text: {
+      verbosity: "low",
       format: zodTextFormat(companyAnalysisSchema, "company_analysis"),
     },
   });
