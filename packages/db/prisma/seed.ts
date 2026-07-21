@@ -1,0 +1,70 @@
+import path from "node:path";
+import process from "node:process";
+import { fileURLToPath } from "node:url";
+import { PrismaPg } from "@prisma/adapter-pg";
+import dotenv from "dotenv";
+import { PrismaClient } from "./generated/client";
+import { MOCK_PRODUCT_ID, mockProductData } from "./seed/mockProductData";
+
+const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
+
+dotenv.config({
+  path: path.resolve(currentDirectory, "../../../apps/web/.env"),
+});
+
+function createPrismaClient() {
+  const databaseUrl = process.env.DATABASE_URL;
+
+  if (databaseUrl == null || databaseUrl.length === 0) {
+    throw new Error("DATABASE_URL is missing. Set it in apps/web/.env or your shell environment.");
+  }
+
+  const adapter = new PrismaPg({ connectionString: databaseUrl });
+
+  return new PrismaClient({ adapter });
+}
+
+async function seedMockProduct() {
+  const prisma = createPrismaClient();
+
+  try {
+    await prisma.$transaction(async (transaction) => {
+      await transaction.productMarketingTask.deleteMany({
+        where: { productId: MOCK_PRODUCT_ID },
+      });
+      await transaction.productSentiment.deleteMany({
+        where: { productId: MOCK_PRODUCT_ID },
+      });
+      await transaction.product.deleteMany({
+        where: { id: MOCK_PRODUCT_ID },
+      });
+
+      await transaction.product.create({
+        data: {
+          id: mockProductData.id,
+          generalDescription: mockProductData.generalDescription,
+          plusSides: mockProductData.plusSides,
+          minusSides: mockProductData.minusSides,
+          mainCompetitors: mockProductData.mainCompetitors,
+          marketingTasks: {
+            create: [...mockProductData.marketingTasks],
+          },
+          sentiments: {
+            create: [...mockProductData.sentiments],
+          },
+        },
+      });
+    });
+
+    console.log(`Seeded mock product ${MOCK_PRODUCT_ID}`);
+    console.log(`- ${mockProductData.marketingTasks.length} marketing tasks`);
+    console.log(`- ${mockProductData.sentiments.length} sentiment records`);
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+
+void seedMockProduct().catch((error) => {
+  console.error(error instanceof Error ? error.message : error);
+  process.exitCode = 1;
+});
