@@ -26,7 +26,9 @@ model ProductMarketingTask {
   targetDate  DateTime          @map("target_date") @db.Timestamptz
   createdAt   DateTime          @default(now()) @map("created_at") @db.Timestamptz
   updatedAt   DateTime          @updatedAt @map("updated_at") @db.Timestamptz
+  trendId     String?           @map("trend_id") @db.Uuid
   product     Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  trend       Trend?            @relation(fields: [trendId], references: [id], onDelete: SetNull)
 
   @@index([productId])
   @@index([targetDate])

@@ -1,0 +1,14 @@
+{
+  "name": "@app-template/worker-runner",
+  "version": "1.0.0",
+  "type": "module",
+  "exports": {
+    ".": {
+      "default": "./src/index.ts"
+    }
+  },
+  "devDependencies": {
+    "@app-template/config": "workspace:*",
+    "typescript": "catalog:"
+  }
+}
