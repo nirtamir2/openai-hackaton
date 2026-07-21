@@ -2,8 +2,9 @@ import type { RouterClient } from "@orpc/server";
 import { ORPCError } from "@orpc/server";
 import { z } from "zod";
 import { generateMarketingTasks } from "@app-template/ai";
-import prisma from "@app-template/db";
+import prisma, { MarketingTaskType } from "@app-template/db";
 import { publicProcedure } from "../index";
+import { createGrowthFeedIdea } from "../feed/createGrowthFeedIdea";
 import { syncMarketingTaskToGrowthFeed } from "../feed/syncMarketingTasksToGrowthFeed";
 import { clearTodayMarketingTasks } from "../marketing/clearTodayMarketingTasks";
 import { createProductMarketingTask } from "../marketing/createProductMarketingTask";
@@ -81,8 +82,41 @@ export const appRouter = {
         taskCount: input.taskCount,
         forToday: input.forToday,
       });
+
+      let longTasks = generatedTasks.filter(
+        (task) => task.taskType === MarketingTaskType.LONG,
+      );
+
+      if (longTasks.length === 0) {
+        const ideaTasks = await generateMarketingTasks({
+          context: {
+            product: marketSentiment.product,
+            marketingProfile: marketSentiment.marketingProfile,
+            marketingTasks: marketSentiment.marketingTasks,
+            sentiments: marketSentiment.sentiments,
+            trend:
+              trend == null
+                ? null
+                : {
+                    source: trend.source,
+                    type: trend.type,
+                    description: trend.description,
+                    popularExamples: trend.popularExamples,
+                  },
+          },
+          taskCount: 1,
+          forToday: false,
+        });
+
+        longTasks = ideaTasks.filter((task) => task.taskType === MarketingTaskType.LONG);
+      }
+
+      const shortTasks = generatedTasks.filter(
+        (task) => task.taskType === MarketingTaskType.SHORT,
+      );
+
       const marketingTasks = await Promise.all(
-        generatedTasks.map(async (task) =>
+        shortTasks.map(async (task) =>
           createProductMarketingTask({
             ...task,
             productId: marketSentiment.product.id,
@@ -95,6 +129,18 @@ export const appRouter = {
         marketingTasks.map(async (task) => syncMarketingTaskToGrowthFeed(task)),
       );
 
+      const ideas = await Promise.all(
+        longTasks.map(async (task) =>
+          createGrowthFeedIdea({
+            productId: marketSentiment.product.id,
+            task: {
+              ...task,
+              trendId: input.trendId ?? null,
+            },
+          }),
+        ),
+      );
+
       return {
         productId: marketSentiment.product.id,
         sentimentWindow: {
@@ -102,6 +148,7 @@ export const appRouter = {
           end: marketSentiment.windowEnd,
         },
         marketingTasks,
+        ideas,
       };
     }),
 };

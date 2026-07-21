@@ -1,6 +1,7 @@
 import prisma, { GrowthFeedEntryKind, GrowthIdeaStatus } from "@app-template/db";
 import { ORPCError } from "@orpc/server";
 import { z } from "zod";
+import { approveGrowthFeedIdea } from "../feed/approveGrowthFeedIdea";
 import { mapGrowthFeedEntries } from "../feed/mapGrowthFeedEntries";
 import { syncMarketingTasksToGrowthFeed } from "../feed/syncMarketingTasksToGrowthFeed";
 import { publicProcedure } from "../index";
@@ -111,15 +112,22 @@ export const feedRouter = {
         throw new ORPCError("BAD_REQUEST", { message: "Entry is not an idea." });
       }
 
-      await prisma.productGrowthFeedEntry.updateMany({
-        where: {
+      if (input.status === GrowthIdeaStatus.APPROVED) {
+        await approveGrowthFeedIdea({
           productId: input.productId,
-          externalId: input.entryId,
-        },
-        data: {
-          ideaStatus: input.status,
-        },
-      });
+          entryId: input.entryId,
+        });
+      } else {
+        await prisma.productGrowthFeedEntry.updateMany({
+          where: {
+            productId: input.productId,
+            externalId: input.entryId,
+          },
+          data: {
+            ideaStatus: input.status,
+          },
+        });
+      }
 
       return { entryId: input.entryId, status: input.status };
     }),

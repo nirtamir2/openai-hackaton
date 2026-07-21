@@ -7,8 +7,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ListTodo, Plus, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Loader } from "@/components/layout/Loader";
 import { TaskFormDialog } from "@/components/tasks/TaskFormDialog";
+import { TaskListLoading } from "@/components/tasks/TaskListLoading";
 import { TaskTable } from "@/components/tasks/TaskTable";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
@@ -37,6 +37,7 @@ export function TaskManagement({ productId }: Props) {
   const [networkFilter, setNetworkFilter] = useState<MarketingTaskNetwork | "all">("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [isGeneratingTasks, setIsGeneratingTasks] = useState(false);
 
   const tasksQuery = useQuery(
     orpc.calendar.getTasks.queryOptions({
@@ -54,20 +55,36 @@ export function TaskManagement({ productId }: Props) {
 
   const generateMutation = useMutation(
     orpc.generateMarketingTasks.mutationOptions({
+      onMutate: () => {
+        setIsGeneratingTasks(true);
+      },
       onSuccess: async (result) => {
         await queryClient.invalidateQueries({
           queryKey: orpc.calendar.getTasks.key({ input: { productId } }),
         });
-        toast.success(`Generated ${String(result.marketingTasks.length)} tasks for today`);
+        await queryClient.invalidateQueries({
+          queryKey: orpc.feed.getFeed.key({ input: { productId } }),
+        });
+        const ideaCount = result.ideas.length;
+        const taskCount = result.marketingTasks.length;
+        const ideaLabel = ideaCount === 1 ? "idea" : "ideas";
+        const taskLabel = taskCount === 1 ? "task" : "tasks";
+        toast.success(
+          `Generated ${String(taskCount)} ${taskLabel} and ${String(ideaCount)} new ${ideaLabel}`,
+        );
       },
       onError: (error) => {
         toast.error(getOrpcErrorMessage({ error }));
+      },
+      onSettled: () => {
+        setIsGeneratingTasks(false);
       },
     }),
   );
 
   const tasks = tasksQuery.data ?? [];
   const hasTasks = tasks.length > 0;
+  const showTaskListLoading = tasksQuery.isLoading || isGeneratingTasks;
 
   return (
     <div className="flex flex-col gap-6">
@@ -133,7 +150,7 @@ export function TaskManagement({ productId }: Props) {
             <SelectContent>
               <SelectItem value="all">All durations</SelectItem>
               <SelectItem value={MarketingTaskType.SHORT}>Short tasks</SelectItem>
-              <SelectItem value={MarketingTaskType.LONG}>Ongoing projects</SelectItem>
+              <SelectItem value={MarketingTaskType.LONG}>Ideas</SelectItem>
             </SelectContent>
           </Select>
 
@@ -183,9 +200,11 @@ export function TaskManagement({ productId }: Props) {
         </div>
       </div>
 
-      {tasksQuery.isLoading ? <Loader /> : null}
+      {showTaskListLoading ? (
+        <TaskListLoading variant={isGeneratingTasks ? "generating" : "initial"} />
+      ) : null}
 
-      {tasksQuery.isSuccess && !hasTasks ? (
+      {!showTaskListLoading && tasksQuery.isSuccess && !hasTasks ? (
         <Card>
           <CardHeader>
             <ListTodo className="size-5 text-primary" />
@@ -219,7 +238,7 @@ export function TaskManagement({ productId }: Props) {
         </Card>
       ) : null}
 
-      {tasksQuery.isSuccess && hasTasks ? (
+      {!showTaskListLoading && tasksQuery.isSuccess && hasTasks ? (
         <Card>
           <CardHeader>
             <CardTitle>Tasks</CardTitle>

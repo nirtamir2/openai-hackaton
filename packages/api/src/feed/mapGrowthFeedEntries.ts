@@ -1,5 +1,6 @@
 import { GrowthFeedEntryKind, GrowthIdeaStatus } from "@app-template/db";
 import type { ProductGrowthFeedEntryModel } from "@app-template/db";
+import { buildIdeaDescription } from "../marketing/buildIdeaDescription";
 
 export type GrowthAgentDayKey = "mon" | "tue" | "wed" | "thu" | "fri" | "sat" | "sun";
 
@@ -309,7 +310,7 @@ function mapIdea({
     id: entry.externalId,
     title,
     meta,
-    description,
+    description: buildIdeaDescription({ description }),
     why: readString(payload, "why"),
     references,
     materials,

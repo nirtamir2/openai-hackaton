@@ -298,7 +298,13 @@ function buildMarketingTaskSystemPrompt({
     "For LONG tasks, include 2-6 subtasks with concrete action steps. For SHORT tasks, subtasks must be an empty array.",
     "Set priority as an integer from 1 to 5, where 1 is most urgent and 5 is least urgent.",
     forToday
-      ? `Today's date is ${today}. Each targetDate must be exactly ${today}. Every task must be completable in a single focused work session today.`
+      ? taskCount === 1
+        ? `Today's date is ${today}. Generate 1 SHORT task with targetDate exactly ${today}, completable in a single focused work session today.`
+        : [
+            `Today's date is ${today}.`,
+            `Generate ${String(taskCount - 1)} SHORT tasks with targetDate exactly ${today}. Each SHORT task must be completable in a single focused work session today.`,
+            "Also generate exactly 1 LONG task as a multi-step project idea. LONG tasks may use a future targetDate up to 90 days from today.",
+          ].join(" ")
       : `Today's date is ${today}. Each targetDate must be a future calendar date in YYYY-MM-DD format, no more than 90 days from today.`,
     "Return only the structured task plan requested by the output schema.",
     "",
@@ -430,7 +436,9 @@ export async function generateMarketingTasks({
     const description = task.description.trim();
     const targetDate = new Date(`${task.targetDate}T09:00:00.000Z`);
     const hasInvalidTargetDate = forToday
-      ? task.targetDate !== today
+      ? task.taskType === MarketingTaskType.SHORT
+        ? task.targetDate !== today
+        : task.targetDate <= today || targetDate > latestTargetDate
       : task.targetDate <= today || targetDate > latestTargetDate;
 
     if (

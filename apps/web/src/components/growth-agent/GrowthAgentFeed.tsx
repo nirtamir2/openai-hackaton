@@ -1,11 +1,12 @@
 import type { GrowthAgentFeedData } from "@app-template/api/feed/mapGrowthFeedEntries";
 import { GrowthIdeaStatus } from "@app-template/db/enums";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Clock, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { GrowthAgentDayPicker } from "@/components/growth-agent/GrowthAgentDayPicker";
 import { GrowthAgentFeedItemRow } from "@/components/growth-agent/GrowthAgentFeedItemRow";
+import { GrowthAgentIdeaPanel } from "@/components/growth-agent/GrowthAgentIdeaPanel";
 import { GrowthAgentProjectRow } from "@/components/growth-agent/GrowthAgentProjectRow";
 import { GrowthAgentTaskDrawer } from "@/components/growth-agent/GrowthAgentTaskDrawer";
 import { growthAgentDayNames } from "@/components/growth-agent/growthAgentTypes";
@@ -172,7 +173,13 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
       onSuccess: async (result) => {
         setSelectedDay(growthAgentToday);
         await invalidateFeed();
-        toast.success(`Generated ${String(result.marketingTasks.length)} tasks for today`);
+        const ideaCount = result.ideas.length;
+        const taskCount = result.marketingTasks.length;
+        const ideaLabel = ideaCount === 1 ? "idea" : "ideas";
+        const taskLabel = taskCount === 1 ? "task" : "tasks";
+        toast.success(
+          `Generated ${String(taskCount)} ${taskLabel} and ${String(ideaCount)} new ${ideaLabel}`,
+        );
       },
       onError: (error) => {
         toast.error(getOrpcErrorMessage({ error }));
@@ -230,6 +237,11 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
         }
 
         toast.error(getOrpcErrorMessage({ error }));
+      },
+      onSuccess: async (_result, input) => {
+        if (input.status === GrowthIdeaStatus.APPROVED) {
+          await invalidateFeed();
+        }
       },
     }),
   );
@@ -311,7 +323,6 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
 
   const pendingIdeas = ideas.filter((idea) => (ideaStatus[idea.id] ?? "pending") === "pending");
   const postponedIdeas = ideas.filter((idea) => (ideaStatus[idea.id] ?? "pending") === "postponed");
-  const approvedIdeas = ideas.filter((idea) => (ideaStatus[idea.id] ?? "pending") === "approved");
 
   function setCompleted({ entryId, completed }: { entryId: string; completed: boolean }) {
     setItemCompletedMutation.mutate({ productId, entryId, completed });
@@ -441,128 +452,41 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
       </div>
 
       <p className="mb-2.5 text-[12.5px] font-semibold tracking-[0.3px] text-[rgba(23,20,15,0.45)]">
+        IDEAS
+      </p>
+
+      <div className="mb-9">
+        <GrowthAgentIdeaPanel
+          pendingIdeas={pendingIdeas}
+          postponedIdeas={postponedIdeas}
+          onOpenIdea={(idea) => {
+            setDrawerContent({ kind: "idea", idea });
+          }}
+          onApprove={(entryId) => {
+            updateIdeaStatus({ entryId, status: "approved" });
+          }}
+          onPostpone={(entryId) => {
+            updateIdeaStatus({ entryId, status: "postponed" });
+          }}
+          onCancel={(entryId) => {
+            updateIdeaStatus({ entryId, status: "cancelled" });
+          }}
+          onReconsider={(entryId) => {
+            updateIdeaStatus({ entryId, status: "pending" });
+          }}
+        />
+      </div>
+
+      <p className="mb-2.5 text-[12.5px] font-semibold tracking-[0.3px] text-[rgba(23,20,15,0.45)]">
         ONGOING PROJECTS
       </p>
 
       <div className="flex flex-col gap-2">
-        {pendingIdeas.map((idea) => (
-          <div
-            key={idea.id}
-            role="button"
-            tabIndex={0}
-            onClick={() => {
-              setDrawerContent({ kind: "idea", idea });
-            }}
-            onKeyDown={(event) => {
-              if (event.key === "Enter" || event.key === " ") {
-                event.preventDefault();
-                setDrawerContent({ kind: "idea", idea });
-              }
-            }}
-            className="cursor-pointer rounded-[10px] border-[1.5px] border-dashed border-[rgba(106,63,209,0.35)] bg-[rgba(106,63,209,0.06)] p-5"
-          >
-            <span className="font-mono text-[10.5px] font-semibold tracking-[0.3px] text-[#6a3fd1]">
-              NEW IDEA
-            </span>
-            <p className="mt-1.5 text-[15px] font-semibold text-[rgba(23,20,15,0.9)]">{idea.title}</p>
-            <p className="mt-1 text-xs text-[rgba(23,20,15,0.42)]">{idea.meta}</p>
-            <p className="mt-2.5 mb-4 text-sm leading-[1.55] text-[rgba(23,20,15,0.75)]">
-              {idea.description}
-            </p>
-            <div className="flex flex-wrap items-center gap-2.5">
-              <SignalButton
-                variant="primary"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  updateIdeaStatus({ entryId: idea.id, status: "approved" });
-                }}
-              >
-                <Check className="size-[13px] stroke-3" />
-                Approve
-              </SignalButton>
-              <SignalButton
-                variant="secondary"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  updateIdeaStatus({ entryId: idea.id, status: "postponed" });
-                }}
-              >
-                <Clock className="size-[13px]" />
-                Snooze
-              </SignalButton>
-              <SignalButton
-                variant="tertiary"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  updateIdeaStatus({ entryId: idea.id, status: "cancelled" });
-                }}
-              >
-                Not interested
-              </SignalButton>
-            </div>
-          </div>
-        ))}
-
-        {postponedIdeas.map((idea) => (
-          <div
-            key={idea.id}
-            className="flex items-center gap-3.5 rounded-[10px] border border-[rgba(23,20,15,0.1)] bg-white px-[18px] py-3.5"
-          >
-            <span className="inline-block size-2 shrink-0 rounded-full bg-[rgba(106,63,209,0.4)]" />
-            <p className="min-w-0 flex-1 text-sm text-[rgba(23,20,15,0.5)]">
-              Idea postponed: {idea.title}
-            </p>
-            <button
-              type="button"
-              onClick={() => {
-                updateIdeaStatus({ entryId: idea.id, status: "pending" });
-              }}
-              className="shrink-0 text-[12.5px] font-semibold whitespace-nowrap text-[#6a3fd1]"
-            >
-              Reconsider
-            </button>
-          </div>
-        ))}
-
-        {approvedIdeas.map((idea) => (
-          <GrowthAgentProjectRow
-            key={idea.id}
-            project={{
-              id: idea.id,
-              tag: "PROJECT",
-              color: "#6a3fd1",
-              colorBg: "rgba(106,63,209,0.1)",
-              title: idea.title,
-              meta: idea.meta,
-              todos: idea.todos,
-            }}
-            doneCount={getProjectDoneCount({
-              id: idea.id,
-              tag: "PROJECT",
-              color: "#6a3fd1",
-              colorBg: "rgba(106,63,209,0.1)",
-              title: idea.title,
-              meta: idea.meta,
-              todos: idea.todos,
-            })}
-            onOpen={() => {
-              setDrawerContent({
-                kind: "project",
-                project: {
-                  id: idea.id,
-                  tag: "PROJECT",
-                  color: "#6a3fd1",
-                  colorBg: "rgba(106,63,209,0.1)",
-                  title: idea.title,
-                  meta: idea.meta,
-                  description: idea.description,
-                  why: idea.why,
-                  todos: idea.todos,
-                },
-              });
-            }}
-          />
-        ))}
+        {projects.length === 0 ? (
+          <p className="py-[18px] text-center text-[13.5px] text-[rgba(23,20,15,0.35)]">
+            No ongoing projects yet. Approve an idea to start one.
+          </p>
+        ) : null}
 
         {projects.map((project) => (
           <GrowthAgentProjectRow

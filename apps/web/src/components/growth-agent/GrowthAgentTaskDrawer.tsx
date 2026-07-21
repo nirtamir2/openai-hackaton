@@ -549,7 +549,7 @@ function IdeaDrawerBody({
   return (
     <>
       <TaskPreviewSection delayMs={60}>
-        <p className="mb-[22px] text-[14.5px] leading-[1.6] text-[rgba(23,20,15,0.85)]">
+        <p className="mb-[22px] line-clamp-2 text-[14.5px] leading-[1.6] text-[rgba(23,20,15,0.85)]">
           {idea.description}
         </p>
       </TaskPreviewSection>

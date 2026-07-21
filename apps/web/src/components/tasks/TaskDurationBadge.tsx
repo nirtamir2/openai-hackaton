@@ -7,7 +7,7 @@ interface Props {
 
 export function TaskDurationBadge({ taskType }: Props) {
   if (taskType === MarketingTaskType.LONG) {
-    return <Badge variant="outline">Ongoing project</Badge>;
+    return <Badge variant="outline">Idea</Badge>;
   }
 
   return <Badge variant="secondary">Short task</Badge>;

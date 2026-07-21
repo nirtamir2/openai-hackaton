@@ -193,7 +193,7 @@ export function TaskFormDialog({ productId, task, open, onOpenChange }: Props) {
     }
 
     if (isLongTask && formState.subtasks.filter((subtask) => subtask.text.trim().length > 0).length < 2) {
-      toast.error("Ongoing projects need at least 2 subtasks");
+      toast.error("Ideas need at least 2 subtasks");
       return;
     }
 
@@ -303,7 +303,7 @@ export function TaskFormDialog({ productId, task, open, onOpenChange }: Props) {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value={MarketingTaskType.SHORT}>Short task</SelectItem>
-                    <SelectItem value={MarketingTaskType.LONG}>Ongoing project</SelectItem>
+                    <SelectItem value={MarketingTaskType.LONG}>Idea</SelectItem>
                   </SelectContent>
                 </Select>
               </Field>
