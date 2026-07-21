@@ -48,8 +48,8 @@ export class MarketingAIService {
           content: `Output a JSON object representing a marketing trend. It must have the following fields:
 - source (string): The platform or context where the trend originated (e.g. "TikTok", "LinkedIn", "Industry News").
 - type (string): One of "VIDEO", "MEME", "TEXT", "NEWS", "EVENTS", "OTHER".
-- description (string): A short, punchy description of the trend.
-- popularExamples (array of strings): 1-3 URLs showing examples (can be fake plausible URLs).`,
+- description (string): A specific thing, event, or meme that is currently trending (e.g. "Mother's Day", "The Distracted Boyfriend Meme").
+- popularExamples (array of strings): 1-3 examples of how companies used this trend (e.g. "Company X made a new advertisement relating to mothers day in this way").`,
         },
       ],
       response_format: { type: "json_object" },
