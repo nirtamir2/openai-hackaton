@@ -5,6 +5,11 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  --signal-accent-accent: #ff5a1f;
+  --signal-accent-success: #2f6f4e;
+  --signal-accent-info: #2f5fd6;
+  --signal-accent-idea: #6a3fd1;
+  --signal-accent-reddit: #c9440e;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -48,7 +53,8 @@
 }
 
 @theme inline {
-  --font-sans: "Inter Variable", sans-serif;
+  --font-sans: "IBM Plex Sans", "Inter Variable", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -99,6 +105,14 @@
 
   .shimmer {
     @apply animate-pulse bg-muted;
+  }
+
+  .signal-home {
+    font-family: "IBM Plex Sans", sans-serif;
+  }
+
+  .signal-home .font-mono {
+    font-family: "IBM Plex Mono", monospace;
   }
 
   @media (prefers-reduced-motion: reduce) {

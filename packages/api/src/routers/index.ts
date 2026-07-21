@@ -3,9 +3,8 @@ import { ORPCError } from "@orpc/server";
 import { z } from "zod";
 import prisma from "@app-template/db";
 import { protectedProcedure, publicProcedure } from "../index";
-import { generateMarketingTasks } from "../marketing/generateMarketingTasks";
-import { getProductSentimentContext } from "../sentiment/getProductSentimentContext";
 import { calendarRouter } from "./calendar";
+import { onboardingRouter } from "./onboarding";
 import { sentimentRouter } from "./sentiment";
 
 export const appRouter = {
@@ -19,10 +18,15 @@ export const appRouter = {
     };
   }),
   calendar: calendarRouter,
+  onboarding: onboardingRouter,
   sentiment: sentimentRouter,
   generateMarketingTasks: protectedProcedure
     .input(z.object({ productId: z.uuid() }))
     .handler(async ({ input }) => {
+      const { getProductSentimentContext } = await import(
+        "../sentiment/getProductSentimentContext"
+      );
+      const { generateMarketingTasks } = await import("../marketing/generateMarketingTasks");
       const marketSentiment = await getProductSentimentContext({
         productId: input.productId,
       });

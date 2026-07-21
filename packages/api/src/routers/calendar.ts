@@ -1,7 +1,6 @@
-import { MarketingTaskType } from "@app-template/db";
+import prisma, { MarketingTaskType } from "@app-template/db";
 import { ORPCError } from "@orpc/server";
 import { z } from "zod";
-import prisma from "@app-template/db";
 import { protectedProcedure } from "../index";
 
 const taskTypesSchema = z.array(z.enum(MarketingTaskType)).min(1);
@@ -71,10 +70,15 @@ const updateTaskSchema = z
       });
     }
 
+    const {scheduledStart} = input;
+    const {scheduledEnd} = input;
+
     if (
       hasScheduleStart &&
       hasScheduleEnd &&
-      input.scheduledStart >= input.scheduledEnd
+      scheduledStart != null &&
+      scheduledEnd != null &&
+      scheduledStart >= scheduledEnd
     ) {
       context.addIssue({
         code: "custom",
@@ -123,8 +127,8 @@ export const calendarRouter = {
           scheduledEnd: {
             gt: input.from,
           },
-          taskType: input.taskTypes != null ? { in: input.taskTypes } : undefined,
-          priority: input.priorities != null ? { in: input.priorities } : undefined,
+          taskType: input.taskTypes == null ? undefined : { in: input.taskTypes },
+          priority: input.priorities == null ? undefined : { in: input.priorities },
         },
         orderBy: [{ scheduledStart: "asc" }, { scheduledEnd: "asc" }],
       });

@@ -60,7 +60,7 @@ function isDuplicateDescription({
   return descriptions.has(description.trim().toLowerCase());
 }
 
-export async function generateMarketingTasks({ context }: Props): Promise<MarketingTask[]> {
+export async function generateMarketingTasks({ context }: Props): Promise<Array<MarketingTask>> {
   const today = getToday();
   const latestTargetDate = getLatestTargetDate({ today });
   const generatedPlan = await chat({

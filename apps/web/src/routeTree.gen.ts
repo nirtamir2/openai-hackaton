@@ -19,6 +19,7 @@ import { Route as AuthForgotPasswordRouteImport } from './routes/auth/forgot-pas
 import { Route as AuthPathRouteImport } from './routes/auth/$path'
 import { Route as ApiOgRouteImport } from './routes/api/og'
 import { Route as AccountAccountViewRouteImport } from './routes/account/$accountView'
+import { Route as ProductsProductIdTasksRouteImport } from './routes/products/$productId/tasks'
 import { Route as ApiRpcSplatRouteImport } from './routes/api/rpc/$'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
@@ -72,6 +73,11 @@ const AccountAccountViewRoute = AccountAccountViewRouteImport.update({
   path: '/account/$accountView',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProductsProductIdTasksRoute = ProductsProductIdTasksRouteImport.update({
+  id: '/products/$productId/tasks',
+  path: '/products/$productId/tasks',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiRpcSplatRoute = ApiRpcSplatRouteImport.update({
   id: '/api/rpc/$',
   path: '/api/rpc/$',
@@ -96,6 +102,7 @@ export interface FileRoutesByFullPath {
   '/settings/$path': typeof SettingsPathRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
+  '/products/$productId/tasks': typeof ProductsProductIdTasksRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -110,6 +117,7 @@ export interface FileRoutesByTo {
   '/settings/$path': typeof SettingsPathRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
+  '/products/$productId/tasks': typeof ProductsProductIdTasksRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -125,6 +133,7 @@ export interface FileRoutesById {
   '/settings/$path': typeof SettingsPathRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/rpc/$': typeof ApiRpcSplatRoute
+  '/products/$productId/tasks': typeof ProductsProductIdTasksRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -141,6 +150,7 @@ export interface FileRouteTypes {
     | '/settings/$path'
     | '/api/auth/$'
     | '/api/rpc/$'
+    | '/products/$productId/tasks'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -155,6 +165,7 @@ export interface FileRouteTypes {
     | '/settings/$path'
     | '/api/auth/$'
     | '/api/rpc/$'
+    | '/products/$productId/tasks'
   id:
     | '__root__'
     | '/'
@@ -169,6 +180,7 @@ export interface FileRouteTypes {
     | '/settings/$path'
     | '/api/auth/$'
     | '/api/rpc/$'
+    | '/products/$productId/tasks'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -184,6 +196,7 @@ export interface RootRouteChildren {
   SettingsPathRoute: typeof SettingsPathRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiRpcSplatRoute: typeof ApiRpcSplatRoute
+  ProductsProductIdTasksRoute: typeof ProductsProductIdTasksRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -258,6 +271,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AccountAccountViewRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/products/$productId/tasks': {
+      id: '/products/$productId/tasks'
+      path: '/products/$productId/tasks'
+      fullPath: '/products/$productId/tasks'
+      preLoaderRoute: typeof ProductsProductIdTasksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/rpc/$': {
       id: '/api/rpc/$'
       path: '/api/rpc/$'
@@ -288,6 +308,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsPathRoute: SettingsPathRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiRpcSplatRoute: ApiRpcSplatRoute,
+  ProductsProductIdTasksRoute: ProductsProductIdTasksRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
