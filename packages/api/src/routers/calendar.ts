@@ -1,3 +1,4 @@
+import { marketingTaskDescriptionMaxLength } from "@app-template/ai";
 import prisma, { MarketingTaskType } from "@app-template/db";
 import { ORPCError } from "@orpc/server";
 import { z } from "zod";
@@ -6,7 +7,7 @@ import { publicProcedure } from "../index";
 
 const taskTypesSchema = z.array(z.enum(MarketingTaskType)).min(1);
 const prioritiesSchema = z.array(z.int().min(1).max(5)).min(1);
-const taskDescriptionSchema = z.string().trim().min(1).max(500);
+const taskDescriptionSchema = z.string().trim().min(1).max(marketingTaskDescriptionMaxLength);
 
 const calendarTasksSchema = z
   .object({

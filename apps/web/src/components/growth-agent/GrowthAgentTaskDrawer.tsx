@@ -249,13 +249,15 @@ function ItemDrawerBody({
   onCopyX: (text: string) => void;
   onCopyLinkedIn: (text: string) => void;
 }) {
+  const taskDescription = item.description ?? item.why;
+
   return (
     <>
       <TaskPreviewSection delayMs={60}>
         <p className="mb-4 text-[12.5px] text-[rgba(23,20,15,0.45)]">{item.meta}</p>
       </TaskPreviewSection>
 
-      {item.why != null ? (
+      {item.why != null && item.why !== taskDescription ? (
         <TaskPreviewSection delayMs={120}>
           <WhyBlock text={item.why} />
         </TaskPreviewSection>
@@ -358,8 +360,15 @@ function ItemDrawerBody({
 
       {item.type === "post" ? (
         <>
+          {taskDescription != null ? (
+            <TaskPreviewSection delayMs={120}>
+              <p className="mb-5 text-[15px] leading-[1.6] whitespace-pre-line text-[rgba(23,20,15,0.85)]">
+                {taskDescription}
+              </p>
+            </TaskPreviewSection>
+          ) : null}
           {item.draftBody != null ? (
-            <TaskPreviewSection delayMs={180}>
+            <TaskPreviewSection delayMs={taskDescription != null ? 180 : 120}>
               <div className="mb-4 rounded-[10px] border border-[rgba(23,20,15,0.08)] bg-[#f7f5f1] p-4">
                 <DrawerSectionLabel>Drafted post</DrawerSectionLabel>
                 <p className="text-sm leading-[1.6] whitespace-pre-line text-[rgba(23,20,15,0.85)]">
@@ -368,13 +377,17 @@ function ItemDrawerBody({
               </div>
             </TaskPreviewSection>
           ) : null}
-          <TaskPreviewSection delayMs={item.draftBody != null ? 260 : 180}>
+          <TaskPreviewSection
+            delayMs={item.draftBody != null ? 240 : taskDescription != null ? 180 : 120}
+          >
           <div className="flex items-center gap-2.5 border-t border-[rgba(23,20,15,0.08)] pt-[18px]">
             <SignalButton
               variant="primary"
               onClick={() => {
-                if (item.draftBody != null) {
-                  onCopy(item.draftBody);
+                const copyText = item.draftBody ?? taskDescription;
+
+                if (copyText != null) {
+                  onCopy(copyText);
                 }
               }}
             >

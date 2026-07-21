@@ -71,6 +71,7 @@ export function GrowthAgentFeedItemRow({ item, index, completed, onToggle, onOpe
             "truncate text-[14.5px] font-medium text-[rgba(23,20,15,0.88)]",
             completed ? "line-through" : "no-underline",
           )}
+          title={item.description ?? item.why ?? item.title}
         >
           {item.title}
         </p>
