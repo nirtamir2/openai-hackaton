@@ -499,9 +499,18 @@ importers:
       '@app-template/db':
         specifier: workspace:*
         version: link:../db
+      '@app-template/env':
+        specifier: workspace:*
+        version: link:../env
       '@orpc/server':
         specifier: 'catalog:'
         version: 1.14.0(crossws@0.4.5(srvx@0.11.15))(ws@8.20.0)
+      '@tanstack/ai':
+        specifier: 'catalog:'
+        version: 0.42.0
+      '@tanstack/ai-openai':
+        specifier: 'catalog:'
+        version: 0.17.1(@tanstack/ai@0.42.0)(ws@8.20.0)(zod@4.3.6)
       zod:
         specifier: 'catalog:'
         version: 4.3.6
