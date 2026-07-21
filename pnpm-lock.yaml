@@ -318,9 +318,6 @@ importers:
       '@app-template/worker-runner':
         specifier: workspace:*
         version: link:../../packages/worker-runner
-      openai:
-        specifier: ^4.0.0
-        version: 4.104.0(ws@8.20.0)(zod@3.25.76)
     devDependencies:
       '@app-template/config':
         specifier: workspace:*
@@ -549,16 +546,28 @@ importers:
 
   packages/ai:
     dependencies:
+      '@app-template/db':
+        specifier: workspace:*
+        version: link:../db
+      '@app-template/env':
+        specifier: workspace:*
+        version: link:../env
+      '@tanstack/ai':
+        specifier: 'catalog:'
+        version: 0.42.0
+      '@tanstack/ai-openai':
+        specifier: 'catalog:'
+        version: 0.17.1(@tanstack/ai@0.42.0)(ws@8.20.0)(zod@4.3.6)
       openai:
         specifier: ^4.0.0
         version: 4.104.0(ws@8.20.0)(zod@3.25.76)
+      zod:
+        specifier: 'catalog:'
+        version: 4.3.6
     devDependencies:
       '@app-template/config':
         specifier: workspace:*
         version: link:../config
-      '@app-template/db':
-        specifier: workspace:*
-        version: link:../db
       typescript:
         specifier: 'catalog:'
         version: 6.0.3
@@ -577,12 +586,6 @@ importers:
       '@orpc/server':
         specifier: 'catalog:'
         version: 1.14.0(crossws@0.4.5(srvx@0.11.15))(ws@8.20.0)
-      '@tanstack/ai':
-        specifier: 'catalog:'
-        version: 0.42.0
-      '@tanstack/ai-openai':
-        specifier: 'catalog:'
-        version: 0.17.1(@tanstack/ai@0.42.0)(ws@8.20.0)(zod@4.3.6)
       zod:
         specifier: 'catalog:'
         version: 4.3.6

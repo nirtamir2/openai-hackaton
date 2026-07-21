@@ -7,10 +7,9 @@
   },
   "dependencies": {
     "@app-template/ai": "workspace:*",
-    "@app-template/worker-runner": "workspace:*",
     "@app-template/db": "workspace:*",
     "@app-template/env": "workspace:*",
-    "openai": "^4.0.0"
+    "@app-template/worker-runner": "workspace:*"
   },
   "devDependencies": {
     "@app-template/config": "workspace:*",

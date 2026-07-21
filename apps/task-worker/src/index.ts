@@ -1,77 +1,167 @@
-import { MarketingAIService } from "@app-template/ai";
+import { generateMarketingTasks, type MarketingTaskGenerationContext } from "@app-template/ai";
 import prisma from "@app-template/db";
 import "dotenv/config";
 
 if (!process.env.OPENAI_API_KEY) {
-  console.error("❌ OPENAI_API_KEY is missing in the environment. Please add it to apps/web/.env and restart the worker.");
+  console.error(
+    "OPENAI_API_KEY is missing in the environment. Please add it to apps/web/.env and restart the worker.",
+  );
   process.exit(1);
 }
 
-const aiService = new MarketingAIService();
+const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
 
-async function processLatestTrend() {
-  // Find the most recently created trend
-  const latestTrend = await prisma.trend.findFirst({
-    orderBy: {
-      createdAt: 'desc',
+async function getTaskGenerationContext({
+  productId,
+  trend,
+}: {
+  productId: string;
+  trend: {
+    source: string;
+    type: string;
+    description: string;
+    popularExamples: string[];
+  };
+}): Promise<MarketingTaskGenerationContext | null> {
+  const since = new Date(Date.now() - TWENTY_FOUR_HOURS_MS);
+  const product = await prisma.product.findUnique({
+    where: { id: productId },
+    include: {
+      sentiments: {
+        where: {
+          analyzedAt: {
+            gte: since,
+          },
+        },
+        orderBy: {
+          analyzedAt: "desc",
+        },
+      },
+      marketingTasks: {
+        orderBy: [{ priority: "asc" }, { targetDate: "asc" }],
+        take: 10,
+      },
     },
   });
 
-  if (!latestTrend) {
+  if (product == null) {
+    return null;
+  }
+
+  return {
+    product: {
+      generalDescription: product.generalDescription,
+      plusSides: product.plusSides,
+      minusSides: product.minusSides,
+      mainCompetitors: product.mainCompetitors,
+    },
+    marketingTasks: product.marketingTasks.map((task) => ({
+      description: task.description,
+      taskType: task.taskType,
+      priority: task.priority,
+      targetDate: task.targetDate.toISOString(),
+    })),
+    sentiments: product.sentiments.map((sentiment) => ({
+      content: sentiment.content,
+      sentimentLabel: sentiment.sentimentLabel,
+      sentimentScore: sentiment.sentimentScore,
+      confidence: sentiment.confidence,
+      source: sentiment.source,
+      sourceUrl: sentiment.sourceUrl,
+      customerName: sentiment.customerName,
+      analyzedAt: sentiment.analyzedAt.toISOString(),
+    })),
+    trend,
+  };
+}
+
+async function createTaskForProduct({
+  productId,
+  trend,
+}: {
+  productId: string;
+  trend: {
+    id: string;
+    source: string;
+    type: string;
+    description: string;
+    popularExamples: string[];
+  };
+}) {
+  const existingTask = await prisma.productMarketingTask.findFirst({
+    where: {
+      productId,
+      trendId: trend.id,
+    },
+  });
+
+  if (existingTask != null) {
+    return;
+  }
+
+  const context = await getTaskGenerationContext({ productId, trend });
+  if (context == null) {
+    return;
+  }
+
+  const [generatedTask] = await generateMarketingTasks({
+    context,
+    taskCount: 1,
+  });
+
+  if (generatedTask == null) {
+    throw new Error("The task generator did not return a task.");
+  }
+
+  const task = await prisma.productMarketingTask.create({
+    data: {
+      ...generatedTask,
+      productId,
+      trendId: trend.id,
+    },
+  });
+
+  console.log(
+    `[TaskWorker] Created task for product ${productId}: ${task.description.substring(0, 50)}...`,
+  );
+}
+
+async function processLatestTrend() {
+  const latestTrend = await prisma.trend.findFirst({
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  if (latestTrend == null) {
     console.log("[TaskWorker] No trends found. Waiting...");
     return;
   }
 
-  let products = await prisma.product.findMany({ take: 5 });
-  
+  const products = await prisma.product.findMany({
+    select: {
+      id: true,
+    },
+    take: 5,
+  });
+
   if (products.length === 0) {
-    console.log("[TaskWorker] No products found. Creating a mock product for testing.");
-    const mockProduct = await prisma.product.create({
-      data: {
-        generalDescription: "A revolutionary AI-powered task manager for busy professionals.",
-        plusSides: "Saves time, intelligent prioritization",
-        minusSides: "High learning curve",
-        mainCompetitors: "Todoist, Notion",
-      }
-    });
-    products = [mockProduct];
+    console.log("[TaskWorker] No products found. Waiting...");
+    return;
   }
 
-  // Run asynchronously for all products
-  await Promise.all(products.map(async (product) => {
-    // Check if task already exists for this trend and product
-    const existingTask = await prisma.productMarketingTask.findFirst({
-      where: {
-        productId: product.id,
-        trendId: latestTrend.id,
+  await Promise.all(
+    products.map(async ({ id }) => {
+      try {
+        await createTaskForProduct({
+          productId: id,
+          trend: latestTrend,
+        });
+      } catch (err) {
+        console.error(`[TaskWorker] Failed to create task for product ${id}:`, err);
       }
-    });
-
-    if (existingTask) {
-      // We already created a task for this product and trend
-      return;
-    }
-
-    try {
-      const generated = await aiService.generateTaskForProduct(latestTrend.description, product.generalDescription);
-      if (!generated) return;
-
-      const task = await prisma.productMarketingTask.create({
-        data: {
-          productId: product.id,
-          trendId: latestTrend.id,
-          description: generated.description,
-          taskType: generated.taskType,
-          priority: generated.priority,
-          targetDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
-        },
-      });
-
-      console.log(`[TaskWorker] Created task for product ${product.id}: ${task.description.substring(0, 50)}...`);
-    } catch (err) {
-      console.error(`[TaskWorker] Failed to create task for product ${product.id}:`, err);
-    }
-  }));
+    }),
+  );
 }
 
 import { createWorkerLoop } from "@app-template/worker-runner";
@@ -80,11 +170,11 @@ const worker = createWorkerLoop({
   name: "TaskWorker",
   intervalMs: 10000,
   setup: async () => {
-    console.log("Task worker running on OpenAI (gpt-4o)...");
+    console.log("Task worker running on OpenAI (gpt-5-mini)...");
   },
   task: async () => {
     await processLatestTrend();
-  }
+  },
 });
 
 worker.start();
