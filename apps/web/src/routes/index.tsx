@@ -1,143 +1,91 @@
-import { useQuery } from "@tanstack/react-query";
+import type { ReactNode } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import {
-  ArrowRight,
-  Database,
-  Lock,
-  Route as RouteIcon,
-  ShieldCheck,
-  Sparkles,
-} from "lucide-react";
+import { ArrowRight, Search, Sparkles } from "lucide-react";
 import { GlobalHeaderControls } from "@/components/layout/GlobalHeaderControls";
 import { PageLayout } from "@/components/layout/PageLayout";
+import { ProductOnboarding } from "@/components/onboarding/ProductOnboarding";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { getUser } from "@/functions/getUser";
-import { m } from "@/paraglide/messages.js";
-import { appName } from "@/utils/appName";
 import { buildSeo } from "@/utils/buildSeo";
 import { orpc } from "@/utils/orpc";
-
-const stackItems = [
-  {
-    icon: RouteIcon,
-    title: "TanStack Start",
-    description: "File routes, SSR, server functions, and typed navigation.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Better Auth",
-    description: "Email/password auth wired to Prisma and PostgreSQL.",
-  },
-  {
-    icon: Database,
-    title: "Prisma",
-    description: "Generated database client in a shared workspace package.",
-  },
-  {
-    icon: Sparkles,
-    title: "oRPC",
-    description: "End-to-end typed API calls with TanStack Query helpers.",
-  },
-] as const;
 
 export const Route = createFileRoute("/")({
   head: () =>
     buildSeo({
-      title: appName(),
-      description: m.seo_root_description(),
+      title: "Product Atlas",
+      description: "Turn a product website into a clear, editable product profile.",
       pathname: "/",
     }),
   beforeLoad: async () => {
     const session = await getUser();
     return { session };
   },
+  loader: async ({ context }) => {
+    if (context.session?.user == null) {
+      return null;
+    }
+
+    return await context.queryClient.ensureQueryData(orpc.productProfile.get.queryOptions());
+  },
   component: HomeComponent,
 });
 
 function HomeComponent() {
-  const { session } = Route.useRouteContext();
-  const healthQuery = useQuery(orpc.healthCheck.queryOptions());
-  const privateDataQuery = useQuery({
-    ...orpc.privateData.queryOptions(),
-    enabled: session?.user != null,
-  });
+  const initialProfile = Route.useLoaderData();
 
+  return <ProductOnboarding initialProfile={initialProfile} />;
+}
+
+function PublicLanding() {
   return (
-    <PageLayout
-      title={appName()}
-      subtitle={m.seo_root_description()}
-      headerControls={<GlobalHeaderControls />}
-    >
-      <div className="mx-auto flex max-w-5xl flex-col gap-8">
-        <section className="grid gap-6 py-6 md:grid-cols-[1fr_auto] md:items-end">
-          <div className="flex flex-col gap-4">
-            <p className="text-sm font-semibold tracking-wider text-primary uppercase">
-              {m.template_badge()}
+    <PageLayout headerControls={<GlobalHeaderControls />}>
+      <div className="mx-auto flex min-h-[70vh] max-w-5xl flex-col justify-center gap-10 py-8">
+        <section className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-end">
+          <div className="flex max-w-3xl flex-col gap-5">
+            <p className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+              <Sparkles className="size-4" />
+              Product intelligence, from one URL
             </p>
-            <h2 className="max-w-3xl text-4xl/tight font-semibold tracking-tight md:text-6xl/tight">
-              {m.home_title()}
-            </h2>
-            <p className="max-w-2xl text-base/7 text-muted-foreground md:text-lg/8">
-              {m.home_subtitle()}
+            <h1 className="text-5xl leading-[0.98] font-semibold tracking-[-0.045em] sm:text-6xl lg:text-7xl">
+              Understand any product’s public footprint.
+            </h1>
+            <p className="max-w-2xl text-base/7 text-muted-foreground sm:text-lg">
+              Product Atlas researches a website, identifies what the product does, and creates an
+              editable profile backed by public sources.
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-2 md:justify-end">
-            {session?.user == null ? (
-              <>
-                <Link to="/auth/login">
-                  <Button variant="secondary">
-                    <Lock className="size-4" />
-                    {m.sign_in()}
-                  </Button>
-                </Link>
-                <Link to="/auth/sign-up">
-                  <Button>
-                    {m.sign_up()}
-                    <ArrowRight className="size-4" />
-                  </Button>
-                </Link>
-              </>
-            ) : (
-              <Link to="/settings/$path" params={{ path: "account" }}>
-                <Button>
-                  {m.account()}
-                  <ArrowRight className="size-4" />
-                </Button>
-              </Link>
-            )}
+          <div className="flex flex-wrap gap-3 lg:justify-end">
+            <Link to="/auth/login">
+              <Button variant="secondary" size="lg">
+                Sign in
+              </Button>
+            </Link>
+            <Link to="/auth/sign-up">
+              <Button size="lg">
+                Create account
+                <ArrowRight className="size-4" />
+              </Button>
+            </Link>
           </div>
         </section>
 
-        <section className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {stackItems.map((item) => (
-            <Card key={item.title} size="sm">
-              <CardHeader>
-                <item.icon className="size-5 text-primary" />
-                <CardTitle>{item.title}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">{item.description}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </section>
-
-        <section className="grid gap-4 md:grid-cols-2">
-          <StatusCard
-            title={m.public_rpc_status()}
-            value={healthQuery.data ?? m.loading()}
-            description={m.public_rpc_description()}
+        <section className="grid gap-4 sm:grid-cols-3">
+          <LandingStep
+            icon={<Search className="size-5" />}
+            label="01 — Research"
+            description="Search the website and corroborating public sources."
           />
-          <StatusCard
-            title={m.protected_rpc_status()}
-            value={
-              session?.user == null
-                ? m.sign_in_required()
-                : (privateDataQuery.data?.user.email ?? m.loading())
-            }
-            description={m.protected_rpc_description()}
+          <LandingStep
+            icon={<Sparkles className="size-5" />}
+            label="02 — Review"
+            description="Correct the AI draft before anything is saved."
+          />
+          <LandingStep
+            icon={<ArrowRight className="size-5" />}
+            label="03 — Use"
+            description="Keep one clear product profile in your workspace."
           />
         </section>
       </div>
@@ -145,25 +93,23 @@ function HomeComponent() {
   );
 }
 
-function StatusCard({
-  title,
-  value,
+function LandingStep({
   description,
+  icon,
+  label,
 }: {
-  title: string;
-  value: string;
   description: string;
+  icon: ReactNode;
+  label: string;
 }) {
   return (
-    <Card>
+    <Card size="sm">
       <CardHeader>
-        <CardTitle>{title}</CardTitle>
+        <div className="text-muted-foreground">{icon}</div>
+        <CardTitle>{label}</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="flex flex-col gap-2">
-          <p className="font-mono text-sm text-primary">{value}</p>
-          <p className="text-sm text-muted-foreground">{description}</p>
-        </div>
+        <p className="text-sm text-muted-foreground">{description}</p>
       </CardContent>
     </Card>
   );

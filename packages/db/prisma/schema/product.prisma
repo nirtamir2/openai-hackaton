@@ -1,0 +1,16 @@
+model ProductProfile {
+  id             String   @id @default(cuid()) @map("_id")
+  userId         String   @unique
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  websiteUrl     String
+  name           String
+  category       String
+  description    String
+  targetAudience String
+  keyFeatures    String[]
+  sourceUrls     String[]
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("product_profile")
+}

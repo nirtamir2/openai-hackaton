@@ -11,11 +11,10 @@ export const env = createEnv({
     CORS_ORIGIN: z.url(),
     GOOGLE_CLIENT_ID: z.string().min(1),
     GOOGLE_CLIENT_SECRET: z.string().min(1),
+    OPENAI_API_KEY: z.string().min(1).optional(),
     OAUTH_PROXY_PRODUCTION_URL: z.url().optional(),
     PORTLESS_URL: z.url().optional(),
-    APP_URL: z
-      .url()
-      .default(process.env.VERCEL_PROJECT_PRODUCTION_URL ?? "https://localhost:3001"),
+    APP_URL: z.url().default(process.env.VERCEL_PROJECT_PRODUCTION_URL ?? "https://localhost:3001"),
     NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   },
   runtimeEnv: process.env,
