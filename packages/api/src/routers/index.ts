@@ -1,5 +1,6 @@
 import type { RouterClient } from "@orpc/server";
 import { protectedProcedure, publicProcedure } from "../index";
+import { sentimentRouter } from "./sentiment";
 
 export const appRouter = {
   healthCheck: publicProcedure.handler(() => {
@@ -11,6 +12,7 @@ export const appRouter = {
       user: context.session.user,
     };
   }),
+  sentiment: sentimentRouter,
 };
 
 export type AppRouter = typeof appRouter;

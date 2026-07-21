@@ -8,6 +8,7 @@ import { createIsomorphicFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { toast } from "sonner";
 import { createContext } from "@app-template/api/context";
+import type { AppRouter } from "@app-template/api/routers/index";
 import { appRouter } from "@app-template/api/routers/index";
 
 export const queryClient = new QueryClient({
@@ -38,7 +39,7 @@ const getORPCClient = createIsomorphicFn()
       },
     }),
   )
-  .client((): RouterClient<typeof appRouter> => {
+  .client((): RouterClient<AppRouter> => {
     const link = new RPCLink({
       url: `${globalThis.location.origin}/api/rpc`,
       async fetch(url, options) {
@@ -52,6 +53,6 @@ const getORPCClient = createIsomorphicFn()
     return createORPCClient(link);
   });
 
-export const client: RouterClient<typeof appRouter> = getORPCClient();
+export const client: RouterClient<AppRouter> = getORPCClient();
 
 export const orpc = createTanstackQueryUtils(client);

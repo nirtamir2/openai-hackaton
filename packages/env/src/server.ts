@@ -16,6 +16,7 @@ export const env = createEnv({
     APP_URL: z
       .url()
       .default(process.env.VERCEL_PROJECT_PRODUCTION_URL ?? "https://localhost:3001"),
+    OPENAI_API_KEY: z.string().min(1),
     NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   },
   runtimeEnv: process.env,

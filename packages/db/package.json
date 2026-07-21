@@ -14,6 +14,7 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:push": "prisma db push",
+    "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
     "type-check": "tsgo --noEmit"
   },
@@ -28,6 +29,7 @@
   "devDependencies": {
     "@app-template/config": "workspace:*",
     "@types/pg": "catalog:",
-    "prisma": "catalog:"
+    "prisma": "catalog:",
+    "tsx": "catalog:"
   }
 }

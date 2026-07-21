@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { PrismaPg } from "@prisma/adapter-pg";
 import dotenv from "dotenv";
 import { PrismaClient } from "./generated/client";
-import { MOCK_PRODUCT_ID, mockProductData } from "./seed/mockProductData";
+import { MOCK_PRODUCT_ID, getMockProductData } from "./seed/mockProductData";
 
 const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
 
@@ -28,6 +28,8 @@ async function seedMockProduct() {
   const prisma = createPrismaClient();
 
   try {
+    const mockProductData = getMockProductData();
+
     await prisma.$transaction(async (transaction) => {
       await transaction.productMarketingTask.deleteMany({
         where: { productId: MOCK_PRODUCT_ID },
@@ -55,16 +57,12 @@ async function seedMockProduct() {
         },
       });
     });
-
-    console.log(`Seeded mock product ${MOCK_PRODUCT_ID}`);
-    console.log(`- ${mockProductData.marketingTasks.length} marketing tasks`);
-    console.log(`- ${mockProductData.sentiments.length} sentiment records`);
   } finally {
     await prisma.$disconnect();
   }
 }
 
-void seedMockProduct().catch((error) => {
+void seedMockProduct().catch((error: unknown) => {
   console.error(error instanceof Error ? error.message : error);
   process.exitCode = 1;
 });
