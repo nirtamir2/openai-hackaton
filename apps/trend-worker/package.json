@@ -1,0 +1,20 @@
+{
+  "name": "@app-template/trend-worker",
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch --env-file=../../apps/web/.env --import tsx/esm src/index.ts",
+    "start": "node --env-file=../../apps/web/.env --import tsx/esm src/index.ts"
+  },
+  "dependencies": {
+    "@app-template/ai": "workspace:*",
+    "@app-template/worker-runner": "workspace:*",
+    "@app-template/db": "workspace:*",
+    "@app-template/env": "workspace:*",
+    "openai": "^4.0.0"
+  },
+  "devDependencies": {
+    "@app-template/config": "workspace:*",
+    "tsx": "^4.7.0",
+    "typescript": "catalog:"
+  }
+}

@@ -12,6 +12,7 @@ export default nirtamir2(
       "apps/web/public/register-service-worker.js",
       "apps/web/public/sw.js",
       "packages/db/backupDb.mjs",
+      "packages/db/prisma/seed.ts",
       ".oxfmtrc.json",
     ],
     formatters: false,

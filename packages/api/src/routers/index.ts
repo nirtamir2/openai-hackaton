@@ -3,6 +3,7 @@ import { z } from "zod";
 import { analyzeCompany } from "../functions/analyzeCompany";
 import { protectedProcedure, publicProcedure } from "../index";
 import { productProfileRouter } from "./productProfile";
+import { sentimentRouter } from "./sentiment";
 
 export const appRouter = {
   healthCheck: publicProcedure.handler(() => {
@@ -24,6 +25,7 @@ export const appRouter = {
     };
   }),
   productProfile: productProfileRouter,
+  sentiment: sentimentRouter,
 };
 
 export type AppRouter = typeof appRouter;

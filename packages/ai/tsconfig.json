@@ -1,0 +1,7 @@
+{
+  "extends": "@app-template/config/tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist"
+  },
+  "include": ["src"]
+}
