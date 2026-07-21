@@ -10,6 +10,7 @@ import prisma, {
 } from "@app-template/db";
 import type { ProductMarketingTaskModel } from "@app-template/db";
 import type { MarketingTaskGenerationContext } from "@app-template/ai";
+import { buildIdeaDescription } from "../marketing/buildIdeaDescription";
 import { buildTaskPreviewTitle } from "../marketing/buildTaskPreviewTitle";
 import { enrichMarketingTaskFeedPayload } from "./enrichMarketingTaskFeedPayload";
 import { getMarketingTaskExternalId } from "./marketingTaskFeedIds";
@@ -36,8 +37,36 @@ function getDayKeyFromDate(date: Date) {
   return dayKeys[date.getDay()] ?? "mon";
 }
 
-function buildShortTaskFeedPayload(task: ProductMarketingTaskModel) {
+function resolveTaskDisplay({
+  task,
+  display,
+}: {
+  task: ProductMarketingTaskModel;
+  display?: { title?: string; summary?: string };
+}) {
   const description = task.description.trim();
+
+  return {
+    title:
+      display?.title ??
+      (task.title.length > 0 ? task.title : buildTaskPreviewTitle({ description })),
+    summary:
+      display?.summary ??
+      (task.summary != null && task.summary.length > 0
+        ? task.summary
+        : buildIdeaDescription({ description })),
+  };
+}
+
+function buildShortTaskFeedPayload({
+  task,
+  display,
+}: {
+  task: ProductMarketingTaskModel;
+  display?: { title?: string; summary?: string };
+}) {
+  const description = task.description.trim();
+  const resolvedDisplay = resolveTaskDisplay({ task, display });
   const tag = getMarketingTaskTag({
     network: task.network,
     contentType: task.contentType,
@@ -54,7 +83,7 @@ function buildShortTaskFeedPayload(task: ProductMarketingTaskModel) {
     tag,
     color,
     colorBg,
-    title: buildTaskPreviewTitle({ description }),
+    title: resolvedDisplay.title,
     description,
     meta: `Priority ${String(task.priority)}`,
     marketingTaskId: task.id,
@@ -64,21 +93,22 @@ function buildShortTaskFeedPayload(task: ProductMarketingTaskModel) {
 
 function buildLongTaskFeedPayload({
   task,
+  display,
   videoHook,
 }: {
   task: ProductMarketingTaskModel;
+  display?: { title?: string; summary?: string };
   videoHook: string | null;
 }) {
-  const description = task.description.trim();
+  const resolvedDisplay = resolveTaskDisplay({ task, display });
   const subtasks = parseMarketingTaskSubtasks(task.subtasks);
-  const titleSource = videoHook ?? description;
 
   return {
     tag: "PROJECT",
     color: "#6a3fd1",
     colorBg: "rgba(106,63,209,0.1)",
-    title: buildTaskPreviewTitle({ description: titleSource }),
-    description,
+    title: resolvedDisplay.title,
+    description: resolvedDisplay.summary,
     meta: `Idea · Priority ${String(task.priority)}`,
     marketingTaskId: task.id,
     isVideo: task.contentType === MarketingTaskContentType.VIDEO,
@@ -94,7 +124,7 @@ function buildLongTaskFeedPayload({
 export async function syncMarketingTaskToGrowthFeed(
   task: ProductMarketingTaskModel,
   context: MarketingTaskGenerationContext | null = null,
-  options: { videoHook?: string | null } = {},
+  options: { videoHook?: string | null; display?: { title?: string; summary?: string } } = {},
 ) {
   const externalId = getMarketingTaskExternalId({ taskId: task.id });
   const isLongTask = task.taskType === MarketingTaskType.LONG;
@@ -114,9 +144,10 @@ export async function syncMarketingTaskToGrowthFeed(
   const basePayload = isLongTask
     ? buildLongTaskFeedPayload({
         task,
+        display: options.display,
         videoHook: options.videoHook ?? readStoredVideoHook(existingEntry?.payload),
       })
-    : buildShortTaskFeedPayload(task);
+    : buildShortTaskFeedPayload({ task, display: options.display });
   const payload = isLongTask
     ? basePayload
     : await enrichMarketingTaskFeedPayload({

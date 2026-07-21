@@ -60,6 +60,8 @@ export interface MarketingTaskGenerationContext {
 
 export interface GeneratedMarketingTask {
   description: string;
+  title: string | null;
+  summary: string | null;
   taskType: MarketingTaskType;
   contentType: MarketingTaskContentType;
   network: MarketingTaskNetwork;
@@ -87,6 +89,14 @@ const marketingTaskSubtaskSchema = z.object({
 });
 
 const marketingTaskSchema = z.object({
+  title: z.string().min(5).max(80).meta({
+    description:
+      "A short scannable display title (5-80 characters) naming the channel and deliverable. No execution steps or long explanations.",
+  }),
+  summary: z.string().min(20).max(500).optional().meta({
+    description:
+      "Required for LONG tasks only: a 1-2 sentence overview of the project goal and expected impact. Omit for SHORT tasks.",
+  }),
   description: z.string().min(20).max(marketingTaskDescriptionMaxLength).meta({
     description:
       "A detailed concrete marketing action for one configured channel. Start with the channel name, then specify the deliverable, target audience, product evidence, and execution steps. Do not include customer names or URLs.",
@@ -388,6 +398,7 @@ function buildMarketingTaskSystemPrompt({
     "- Name the intended audience segment from the configured target markets when relevant.",
     "- Tie the task to product evidence from positioning, strengths, weaknesses, competitors, or recent sentiment.",
     "- Match the configured brand voice and stay within the stated weekly capacity.",
+    "Every task must also include title: a short scannable display title (5-80 characters) naming the channel and deliverable. Keep execution details in description only — never in title.",
     trendInstructions,
     "Prioritize the strongest recent customer risks and opportunities. If there is no recent sentiment, base tasks on documented positioning, strengths, weaknesses, and competitors without claiming customer demand.",
     "Never create product-engineering, sales operations, customer support, hiring, legal, finance, or internal tooling tasks.",
@@ -403,6 +414,7 @@ function buildMarketingTaskSystemPrompt({
     "Set contentType to reply, post, video, or image based on the deliverable format.",
     "When contentType is reply, the task must be a quick community response completable in minutes. The drafted reply will be short and snappy (1-3 sentences), not a long-form comment or essay.",
     "Set network to x, reddit, linkedin, youtube, or meta based on where the task will be executed.",
+    "For LONG tasks, also generate summary (1-2 sentence project overview). SHORT tasks must omit summary.",
     "Set priority as an integer from 1 to 5, where 1 is most urgent and 5 is least urgent.",
     forIdea
       ? [
@@ -477,7 +489,8 @@ async function generateMarketingTasksWithJsonFallback({
       buildMarketingTaskSystemPrompt({ context, taskCount, today, forToday, forIdea }),
       [
         `Return only a single JSON object with a "tasks" array containing exactly ${String(taskCount)} task object${taskCount === 1 ? "" : "s"}.`,
-        "Each task must include description, taskType, contentType, network, subtasks, priority, targetDate, and videoHook when taskType is LONG.",
+        "Each task must include title, description, taskType, contentType, network, subtasks, priority, and targetDate.",
+        "LONG tasks must also include summary and videoHook. SHORT tasks must omit summary and videoHook.",
         "Do not include markdown fences or commentary.",
       ].join("\n"),
     ],
@@ -523,9 +536,18 @@ function isValidGeneratedTask(task: {
   network: MarketingTaskNetwork;
   subtasks: Array<{ text: string }>;
   videoHook?: string;
+  title?: string;
+  summary?: string;
 }) {
+  const title = task.title?.trim() ?? "";
+
+  if (title.length < 5) {
+    return false;
+  }
+
   if (task.taskType === MarketingTaskType.LONG) {
     const videoHook = task.videoHook?.trim() ?? "";
+    const summary = task.summary?.trim() ?? "";
     const isVideoNetwork =
       task.network === MarketingTaskNetwork.YOUTUBE ||
       task.network === MarketingTaskNetwork.LINKEDIN ||
@@ -535,7 +557,8 @@ function isValidGeneratedTask(task: {
       task.contentType === MarketingTaskContentType.VIDEO &&
       isVideoNetwork &&
       videoHook.length >= 10 &&
-      task.subtasks.length >= 4
+      task.subtasks.length >= 4 &&
+      summary.length >= 20
     );
   }
 
@@ -806,11 +829,17 @@ export async function generateMarketingTasks({
       subtasks: task.subtasks,
     });
 
+    const title = task.title?.trim() ?? null;
+    const summary =
+      task.taskType === MarketingTaskType.LONG ? (task.summary?.trim() ?? null) : null;
+
     if (task.taskType === MarketingTaskType.LONG) {
       const longSchedule = getLongTaskSchedule({ targetDate });
 
       return {
         description,
+        title,
+        summary,
         taskType: task.taskType,
         contentType: task.contentType,
         network: task.network,
@@ -826,6 +855,8 @@ export async function generateMarketingTasks({
     if (todaySchedule != null) {
       return {
         description,
+        title,
+        summary,
         taskType: task.taskType,
         contentType: task.contentType,
         network: task.network,
@@ -840,6 +871,8 @@ export async function generateMarketingTasks({
 
     return {
       description,
+      title,
+      summary,
       taskType: task.taskType,
       contentType: task.contentType,
       network: task.network,

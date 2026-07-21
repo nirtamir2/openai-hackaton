@@ -4,10 +4,13 @@ import prisma, {
   MarketingTaskType,
 } from "@app-template/db";
 import { ORPCError } from "@orpc/server";
+import { buildTaskPreviewTitle } from "./buildTaskPreviewTitle";
 import { normalizeMarketingTaskSubtasks, serializeMarketingTaskSubtasks } from "./marketingTaskSubtasks";
 
 interface Props {
   productId: string;
+  title?: string | null;
+  summary?: string | null;
   description: string;
   taskType: MarketingTaskType;
   contentType: MarketingTaskContentType;
@@ -45,10 +48,16 @@ export async function createProductMarketingTask(input: Props) {
     subtasks: input.subtasks ?? [],
   });
 
+  const description = input.description.trim();
+  const title = input.title?.trim() || buildTaskPreviewTitle({ description });
+  const summary = input.summary?.trim() || null;
+
   return await prisma.productMarketingTask.create({
     data: {
       productId: input.productId,
-      description: input.description.trim(),
+      title,
+      summary,
+      description,
       taskType: input.taskType,
       contentType: input.contentType,
       network: input.network,
