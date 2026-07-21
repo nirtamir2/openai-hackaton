@@ -1,4 +1,8 @@
-import { MarketingTaskType } from "@app-template/db/enums";
+import {
+  MarketingTaskContentType,
+  MarketingTaskNetwork,
+  MarketingTaskType,
+} from "@app-template/db/enums";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ListTodo, Plus, Sparkles } from "lucide-react";
 import { useState } from "react";
@@ -26,7 +30,11 @@ interface Props {
 export function TaskManagement({ productId }: Props) {
   const queryClient = useQueryClient();
   const dateRange = getTaskListDateRange();
-  const [typeFilter, setTypeFilter] = useState<MarketingTaskType | "all">("all");
+  const [durationFilter, setDurationFilter] = useState<MarketingTaskType | "all">("all");
+  const [contentTypeFilter, setContentTypeFilter] = useState<MarketingTaskContentType | "all">(
+    "all",
+  );
+  const [networkFilter, setNetworkFilter] = useState<MarketingTaskNetwork | "all">("all");
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
@@ -36,10 +44,10 @@ export function TaskManagement({ productId }: Props) {
         productId,
         from: dateRange.from,
         to: dateRange.to,
-        taskTypes:
-          typeFilter === "all" ? undefined : [typeFilter],
-        priorities:
-          priorityFilter === "all" ? undefined : [Number(priorityFilter)],
+        taskTypes: durationFilter === "all" ? undefined : [durationFilter],
+        contentTypes: contentTypeFilter === "all" ? undefined : [contentTypeFilter],
+        networks: networkFilter === "all" ? undefined : [networkFilter],
+        priorities: priorityFilter === "all" ? undefined : [Number(priorityFilter)],
       },
     }),
   );
@@ -66,22 +74,66 @@ export function TaskManagement({ productId }: Props) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
           <Select
-            value={typeFilter}
+            value={contentTypeFilter}
             onValueChange={(value) => {
               if (value == null) {
                 return;
               }
 
-              setTypeFilter(value as MarketingTaskType | "all");
+              setContentTypeFilter(value as MarketingTaskContentType | "all");
             }}
           >
             <SelectTrigger variant="compact" size="sm">
-              <SelectValue placeholder="All types" />
+              <SelectValue placeholder="All task types" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All types</SelectItem>
-              <SelectItem value={MarketingTaskType.SHORT}>Short-term</SelectItem>
-              <SelectItem value={MarketingTaskType.LONG}>Long-term</SelectItem>
+              <SelectItem value="all">All task types</SelectItem>
+              <SelectItem value={MarketingTaskContentType.REPLY}>Reply</SelectItem>
+              <SelectItem value={MarketingTaskContentType.POST}>Post</SelectItem>
+              <SelectItem value={MarketingTaskContentType.VIDEO}>Video</SelectItem>
+              <SelectItem value={MarketingTaskContentType.IMAGE}>Image</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={networkFilter}
+            onValueChange={(value) => {
+              if (value == null) {
+                return;
+              }
+
+              setNetworkFilter(value as MarketingTaskNetwork | "all");
+            }}
+          >
+            <SelectTrigger variant="compact" size="sm">
+              <SelectValue placeholder="All networks" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All networks</SelectItem>
+              <SelectItem value={MarketingTaskNetwork.X}>X</SelectItem>
+              <SelectItem value={MarketingTaskNetwork.REDDIT}>Reddit</SelectItem>
+              <SelectItem value={MarketingTaskNetwork.LINKEDIN}>LinkedIn</SelectItem>
+              <SelectItem value={MarketingTaskNetwork.YOUTUBE}>YouTube</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={durationFilter}
+            onValueChange={(value) => {
+              if (value == null) {
+                return;
+              }
+
+              setDurationFilter(value as MarketingTaskType | "all");
+            }}
+          >
+            <SelectTrigger variant="compact" size="sm">
+              <SelectValue placeholder="All durations" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All durations</SelectItem>
+              <SelectItem value={MarketingTaskType.SHORT}>Short tasks</SelectItem>
+              <SelectItem value={MarketingTaskType.LONG}>Ongoing projects</SelectItem>
             </SelectContent>
           </Select>
 

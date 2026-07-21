@@ -1,13 +1,26 @@
 import { marketingTaskDescriptionMaxLength } from "@app-template/ai";
-import prisma, { MarketingTaskType } from "@app-template/db";
+import prisma, {
+  MarketingTaskContentType,
+  MarketingTaskNetwork,
+  MarketingTaskType,
+} from "@app-template/db";
 import { ORPCError } from "@orpc/server";
 import { z } from "zod";
 import { createProductMarketingTask } from "../marketing/createProductMarketingTask";
+import { normalizeMarketingTaskSubtasks, serializeMarketingTaskSubtasks } from "../marketing/marketingTaskSubtasks";
 import { publicProcedure } from "../index";
 
 const taskTypesSchema = z.array(z.enum(MarketingTaskType)).min(1);
+const contentTypesSchema = z.array(z.enum(MarketingTaskContentType)).min(1);
+const networksSchema = z.array(z.enum(MarketingTaskNetwork)).min(1);
 const prioritiesSchema = z.array(z.int().min(1).max(5)).min(1);
 const taskDescriptionSchema = z.string().trim().min(1).max(marketingTaskDescriptionMaxLength);
+
+const subtaskSchema = z.object({
+  id: z.string().trim().min(1).max(100).optional(),
+  text: z.string().trim().min(1).max(500),
+  done: z.boolean().optional(),
+});
 
 const calendarTasksSchema = z
   .object({
@@ -15,6 +28,8 @@ const calendarTasksSchema = z
     from: z.coerce.date(),
     to: z.coerce.date(),
     taskTypes: taskTypesSchema.optional(),
+    contentTypes: contentTypesSchema.optional(),
+    networks: networksSchema.optional(),
     priorities: prioritiesSchema.optional(),
   })
   .refine(({ from, to }) => from < to, {
@@ -27,6 +42,9 @@ const createTaskSchema = z
     productId: z.uuid(),
     description: taskDescriptionSchema,
     taskType: z.enum(MarketingTaskType),
+    contentType: z.enum(MarketingTaskContentType),
+    network: z.enum(MarketingTaskNetwork),
+    subtasks: z.array(subtaskSchema).max(8).default([]),
     priority: z.int().min(1).max(5),
     targetDate: z.coerce.date(),
     scheduledStart: z.coerce.date(),
@@ -43,6 +61,9 @@ const updateTaskSchema = z
     taskId: z.uuid(),
     description: taskDescriptionSchema.optional(),
     taskType: z.enum(MarketingTaskType).optional(),
+    contentType: z.enum(MarketingTaskContentType).optional(),
+    network: z.enum(MarketingTaskNetwork).optional(),
+    subtasks: z.array(subtaskSchema).max(8).optional(),
     priority: z.int().min(1).max(5).optional(),
     targetDate: z.coerce.date().optional(),
     scheduledStart: z.coerce.date().optional(),
@@ -54,6 +75,9 @@ const updateTaskSchema = z
     const hasTaskChanges =
       input.description != null ||
       input.taskType != null ||
+      input.contentType != null ||
+      input.network != null ||
+      input.subtasks != null ||
       input.priority != null ||
       input.targetDate != null;
 
@@ -130,6 +154,8 @@ export const calendarRouter = {
             gt: input.from,
           },
           taskType: input.taskTypes == null ? undefined : { in: input.taskTypes },
+          contentType: input.contentTypes == null ? undefined : { in: input.contentTypes },
+          network: input.networks == null ? undefined : { in: input.networks },
           priority: input.priorities == null ? undefined : { in: input.priorities },
         },
         orderBy: [{ scheduledStart: "asc" }, { scheduledEnd: "asc" }],
@@ -143,10 +169,12 @@ export const calendarRouter = {
   updateTask: publicProcedure
     .input(updateTaskSchema)
     .handler(async ({ input }) => {
-      await findProductMarketingTask({
+      const existingTask = await findProductMarketingTask({
         productId: input.productId,
         taskId: input.taskId,
       });
+
+      const nextTaskType = input.taskType ?? existingTask.taskType;
 
       return await prisma.productMarketingTask.update({
         where: {
@@ -155,6 +183,17 @@ export const calendarRouter = {
         data: {
           description: input.description,
           taskType: input.taskType,
+          contentType: input.contentType,
+          network: input.network,
+          subtasks:
+            input.subtasks == null
+              ? undefined
+              : (serializeMarketingTaskSubtasks(
+                  normalizeMarketingTaskSubtasks({
+                    taskType: nextTaskType,
+                    subtasks: input.subtasks,
+                  }),
+                ) as never),
           priority: input.priority,
           targetDate: input.targetDate,
           scheduledStart: input.scheduledStart,

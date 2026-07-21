@@ -1,14 +1,28 @@
-import { MarketingTaskType } from "@app-template/db/enums";
-import { Badge } from "@/components/ui/Badge";
+import {
+  getMarketingTaskNetworkColor,
+  getMarketingTaskNetworkColorBg,
+  getMarketingTaskTag,
+  MarketingTaskContentType,
+  MarketingTaskNetwork,
+} from "@app-template/db";
 
 interface Props {
-  taskType: MarketingTaskType;
+  contentType: MarketingTaskContentType;
+  network: MarketingTaskNetwork;
 }
 
-export function TaskTypeBadge({ taskType }: Props) {
-  if (taskType === MarketingTaskType.LONG) {
-    return <Badge variant="outline">Long-term</Badge>;
-  }
+export function TaskTypeBadge({ contentType, network }: Props) {
+  const color = getMarketingTaskNetworkColor({ network });
+  const colorBg = getMarketingTaskNetworkColorBg({ network });
+  const label = getMarketingTaskTag({ network, contentType });
 
-  return <Badge variant="secondary">Short-term</Badge>;
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 font-mono text-[10px] font-semibold tracking-[0.3px]"
+      style={{ color, backgroundColor: colorBg }}
+    >
+      <span className="inline-block size-[5px] rounded-full" style={{ backgroundColor: color }} />
+      {label}
+    </span>
+  );
 }

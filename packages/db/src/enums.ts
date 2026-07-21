@@ -1,5 +1,7 @@
 export {
   MarketingTaskType,
+  MarketingTaskContentType,
+  MarketingTaskNetwork,
   SentimentLabel,
   SentimentSource,
   GrowthFeedEntryKind,

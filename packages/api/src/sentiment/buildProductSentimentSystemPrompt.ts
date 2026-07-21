@@ -25,7 +25,7 @@ export function buildProductSentimentSystemPrompt(context: ProductSentimentConte
       : context.marketingTasks
           .map(
             (task, index) =>
-              `${String(index + 1)}. [${task.taskType}] priority=${String(task.priority)} target=${task.targetDate} — ${task.description}`,
+              `${String(index + 1)}. [${task.taskType}/${task.contentType}@${task.network}] priority=${String(task.priority)} target=${task.targetDate} — ${task.description}`,
           )
           .join("\n");
 

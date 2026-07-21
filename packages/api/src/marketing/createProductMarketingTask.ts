@@ -1,10 +1,18 @@
-import prisma, { MarketingTaskType } from "@app-template/db";
+import prisma, {
+  MarketingTaskContentType,
+  MarketingTaskNetwork,
+  MarketingTaskType,
+} from "@app-template/db";
 import { ORPCError } from "@orpc/server";
+import { normalizeMarketingTaskSubtasks, serializeMarketingTaskSubtasks } from "./marketingTaskSubtasks";
 
 interface Props {
   productId: string;
   description: string;
   taskType: MarketingTaskType;
+  contentType: MarketingTaskContentType;
+  network: MarketingTaskNetwork;
+  subtasks?: Array<{ id?: string; text: string; done?: boolean }>;
   priority: number;
   targetDate: Date;
   scheduledStart: Date;
@@ -32,11 +40,19 @@ export async function createProductMarketingTask(input: Props) {
     throw new ORPCError("NOT_FOUND");
   }
 
+  const subtasks = normalizeMarketingTaskSubtasks({
+    taskType: input.taskType,
+    subtasks: input.subtasks ?? [],
+  });
+
   return await prisma.productMarketingTask.create({
     data: {
       productId: input.productId,
       description: input.description.trim(),
       taskType: input.taskType,
+      contentType: input.contentType,
+      network: input.network,
+      subtasks: serializeMarketingTaskSubtasks(subtasks) as never,
       priority: input.priority,
       targetDate: input.targetDate,
       scheduledStart: input.scheduledStart,

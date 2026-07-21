@@ -3,6 +3,20 @@ enum MarketingTaskType {
   LONG  @map("long")
 }
 
+enum MarketingTaskContentType {
+  REPLY @map("reply")
+  POST  @map("post")
+  VIDEO @map("video")
+  IMAGE @map("image")
+}
+
+enum MarketingTaskNetwork {
+  X        @map("x")
+  REDDIT   @map("reddit")
+  LINKEDIN @map("linkedin")
+  YOUTUBE  @map("youtube")
+}
+
 model Product {
   id                 String                 @id @default(uuid()) @db.Uuid
   generalDescription String                 @map("general_description")
@@ -21,19 +35,22 @@ model Product {
 }
 
 model ProductMarketingTask {
-  id          String            @id @default(uuid()) @db.Uuid
-  productId   String            @map("product_id") @db.Uuid
-  description String
-  taskType    MarketingTaskType @map("task_type")
-  priority    Int
-  targetDate  DateTime          @map("target_date") @db.Timestamptz
-  scheduledStart DateTime        @map("scheduled_start") @db.Timestamptz
-  scheduledEnd   DateTime        @map("scheduled_end") @db.Timestamptz
-  createdAt   DateTime          @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt   DateTime          @updatedAt @map("updated_at") @db.Timestamptz
-  trendId     String?           @map("trend_id") @db.Uuid
-  product     Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
-  trend       Trend?            @relation(fields: [trendId], references: [id], onDelete: SetNull)
+  id             String                   @id @default(uuid()) @db.Uuid
+  productId      String                   @map("product_id") @db.Uuid
+  description    String
+  taskType       MarketingTaskType        @map("task_type")
+  contentType    MarketingTaskContentType @map("content_type")
+  network        MarketingTaskNetwork
+  subtasks       Json                     @default("[]")
+  priority       Int
+  targetDate     DateTime                 @map("target_date") @db.Timestamptz
+  scheduledStart DateTime                 @map("scheduled_start") @db.Timestamptz
+  scheduledEnd   DateTime                 @map("scheduled_end") @db.Timestamptz
+  createdAt      DateTime                 @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime                 @updatedAt @map("updated_at") @db.Timestamptz
+  trendId        String?                  @map("trend_id") @db.Uuid
+  product        Product                  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  trend          Trend?                   @relation(fields: [trendId], references: [id], onDelete: SetNull)
 
   @@index([productId])
   @@index([targetDate])

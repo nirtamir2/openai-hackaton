@@ -45,6 +45,8 @@ export async function getProductSentimentContext({ productId }: { productId: str
     marketingTasks: product.marketingTasks.map((task) => ({
       description: task.description,
       taskType: task.taskType,
+      contentType: task.contentType,
+      network: task.network,
       priority: task.priority,
       targetDate: task.targetDate.toISOString(),
     })),

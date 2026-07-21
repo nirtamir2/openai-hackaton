@@ -2,7 +2,7 @@ import { chat } from "@tanstack/ai";
 import { createOpenaiChat } from "@tanstack/ai-openai";
 import OpenAI from "openai";
 import { z } from "zod";
-import { MarketingTaskType } from "@app-template/db";
+import { MarketingTaskContentType, MarketingTaskNetwork, MarketingTaskType } from "@app-template/db";
 import type { TrendType } from "@app-template/db";
 import { env } from "@app-template/env/server";
 
@@ -34,6 +34,8 @@ export interface MarketingTaskGenerationContext {
   marketingTasks: Array<{
     description: string;
     taskType: MarketingTaskType;
+    contentType: MarketingTaskContentType;
+    network: MarketingTaskNetwork;
     priority: number;
     targetDate: string;
   }>;
@@ -58,6 +60,9 @@ export interface MarketingTaskGenerationContext {
 export interface GeneratedMarketingTask {
   description: string;
   taskType: MarketingTaskType;
+  contentType: MarketingTaskContentType;
+  network: MarketingTaskNetwork;
+  subtasks: Array<{ id: string; text: string; done: boolean }>;
   priority: number;
   targetDate: Date;
   scheduledStart: Date;
@@ -72,6 +77,12 @@ interface GenerateMarketingTasksProps {
 
 export const marketingTaskDescriptionMaxLength = 2_000;
 
+const marketingTaskSubtaskSchema = z.object({
+  text: z.string().min(3).max(500).meta({
+    description: "A concrete step in a long-running project.",
+  }),
+});
+
 const marketingTaskSchema = z.object({
   description: z.string().min(20).max(marketingTaskDescriptionMaxLength).meta({
     description:
@@ -79,7 +90,17 @@ const marketingTaskSchema = z.object({
   }),
   taskType: z.enum(MarketingTaskType).meta({
     description:
-      "SHORT for a focused task completed within 14 days; LONG for a multi-step initiative requiring more than 14 days.",
+      "SHORT for a focused task completed within 14 days; LONG for a multi-step ongoing project requiring more than 14 days.",
+  }),
+  contentType: z.enum(MarketingTaskContentType).meta({
+    description: "The deliverable format: reply, post, video, or image.",
+  }),
+  network: z.enum(MarketingTaskNetwork).meta({
+    description: "The social network where the task will be executed: x, reddit, linkedin, or youtube.",
+  }),
+  subtasks: z.array(marketingTaskSubtaskSchema).max(8).meta({
+    description:
+      "Required for LONG tasks: 2-6 actionable subtasks. Must be an empty array for SHORT tasks.",
   }),
   priority: z.number().int().min(1).max(5).meta({
     description: "Urgency from 1 (highest) through 5 (lowest).",
@@ -96,7 +117,7 @@ function buildMarketingTaskPlanSchema({ taskCount }: { taskCount: 1 | 3 }) {
 }
 
 function getMarketingTaskOutputTokenLimit({ taskCount }: { taskCount: 1 | 3 }) {
-  return taskCount === 1 ? 2_500 : 4_000;
+  return taskCount === 1 ? 3_000 : 5_000;
 }
 
 function extractJsonObject({ text }: { text: string }) {
@@ -271,7 +292,10 @@ function buildMarketingTaskSystemPrompt({
     "Do not suggest building product features, fixing bugs, changing pricing systems, or improving onboarding flows unless the deliverable is a marketing asset about that topic.",
     "Do not include customer names, URLs, or quotes that could identify a customer in a task description.",
     "Do not duplicate or restate an active marketing task from the context.",
-    "Use taskType SHORT for a focused task that can be completed within 14 days. Use LONG for a multi-step initiative that requires more than 14 days.",
+    "Use taskType SHORT for a focused task that can be completed within 14 days. Use LONG for a multi-step ongoing project that requires more than 14 days.",
+    "Set contentType to reply, post, video, or image based on the deliverable format.",
+    "Set network to x, reddit, linkedin, or youtube based on where the task will be executed.",
+    "For LONG tasks, include 2-6 subtasks with concrete action steps. For SHORT tasks, subtasks must be an empty array.",
     "Set priority as an integer from 1 to 5, where 1 is most urgent and 5 is least urgent.",
     forToday
       ? `Today's date is ${today}. Each targetDate must be exactly ${today}. Every task must be completable in a single focused work session today.`
@@ -320,7 +344,7 @@ async function generateMarketingTasksWithJsonFallback({
       buildMarketingTaskSystemPrompt({ context, taskCount, today, forToday }),
       [
         `Return only a single JSON object with a "tasks" array containing exactly ${String(taskCount)} task object${taskCount === 1 ? "" : "s"}.`,
-        "Each task must include description, taskType, priority, and targetDate.",
+        "Each task must include description, taskType, contentType, network, subtasks, priority, and targetDate.",
         "Do not include markdown fences or commentary.",
       ].join("\n"),
     ],
@@ -338,6 +362,37 @@ async function generateMarketingTasksWithJsonFallback({
 
   const parsedJson = extractJsonObject({ text: responseText });
   return buildMarketingTaskPlanSchema({ taskCount }).parse(parsedJson);
+}
+
+function createGeneratedSubtasks({
+  taskType,
+  subtasks,
+}: {
+  taskType: MarketingTaskType;
+  subtasks: Array<{ text: string }>;
+}) {
+  if (taskType !== MarketingTaskType.LONG) {
+    return [];
+  }
+
+  return subtasks
+    .map((subtask) => ({
+      id: `subtask-${crypto.randomUUID()}`,
+      text: subtask.text.trim(),
+      done: false,
+    }))
+    .filter((subtask) => subtask.text.length > 0);
+}
+
+function isValidGeneratedTask(task: {
+  taskType: MarketingTaskType;
+  subtasks: Array<{ text: string }>;
+}) {
+  if (task.taskType === MarketingTaskType.LONG) {
+    return task.subtasks.length >= 2;
+  }
+
+  return task.subtasks.length === 0;
 }
 
 export async function generateMarketingTasks({
@@ -382,6 +437,7 @@ export async function generateMarketingTasks({
       description.length === 0 ||
       Number.isNaN(targetDate.getTime()) ||
       hasInvalidTargetDate ||
+      !isValidGeneratedTask(task) ||
       isDuplicateDescription({ description, descriptions: existingDescriptions }) ||
       isDuplicateDescription({ description, descriptions: generatedDescriptions })
     ) {
@@ -390,10 +446,18 @@ export async function generateMarketingTasks({
 
     generatedDescriptions.add(description.toLowerCase());
 
+    const subtasks = createGeneratedSubtasks({
+      taskType: task.taskType,
+      subtasks: task.subtasks,
+    });
+
     if (todaySchedule != null) {
       return {
         description,
         taskType: task.taskType,
+        contentType: task.contentType,
+        network: task.network,
+        subtasks,
         priority: task.priority,
         targetDate: todaySchedule.targetDate,
         scheduledStart: todaySchedule.scheduledStart,
@@ -404,6 +468,9 @@ export async function generateMarketingTasks({
     return {
       description,
       taskType: task.taskType,
+      contentType: task.contentType,
+      network: task.network,
+      subtasks,
       priority: task.priority,
       targetDate,
       scheduledStart: targetDate,

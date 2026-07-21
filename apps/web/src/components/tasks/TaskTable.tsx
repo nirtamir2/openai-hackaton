@@ -1,4 +1,8 @@
-import type { MarketingTaskType } from "@app-template/db/enums";
+import type {
+  MarketingTaskContentType,
+  MarketingTaskNetwork,
+  MarketingTaskType,
+} from "@app-template/db/enums";
 import { Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import {
@@ -10,6 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/Table";
 import { DeleteTaskDialog } from "@/components/tasks/DeleteTaskDialog";
+import { TaskDurationBadge } from "@/components/tasks/TaskDurationBadge";
 import { TaskFormDialog } from "@/components/tasks/TaskFormDialog";
 import { TaskPriorityBadge } from "@/components/tasks/TaskPriorityBadge";
 import { TaskTypeBadge } from "@/components/tasks/TaskTypeBadge";
@@ -20,6 +25,9 @@ interface Task {
   id: string;
   description: string;
   taskType: MarketingTaskType;
+  contentType: MarketingTaskContentType;
+  network: MarketingTaskNetwork;
+  subtasks: unknown;
   priority: number;
   targetDate: Date | string;
   scheduledStart: Date | string;
@@ -41,7 +49,8 @@ export function TaskTable({ productId, tasks }: Props) {
         <TableHeader>
           <TableRow>
             <TableHead>Description</TableHead>
-            <TableHead>Type</TableHead>
+            <TableHead>Task type</TableHead>
+            <TableHead>Duration</TableHead>
             <TableHead>Priority</TableHead>
             <TableHead>Target</TableHead>
             <TableHead>Scheduled</TableHead>
@@ -59,7 +68,10 @@ export function TaskTable({ productId, tasks }: Props) {
                 </p>
               </TableCell>
               <TableCell>
-                <TaskTypeBadge taskType={task.taskType} />
+                <TaskTypeBadge contentType={task.contentType} network={task.network} />
+              </TableCell>
+              <TableCell>
+                <TaskDurationBadge taskType={task.taskType} />
               </TableCell>
               <TableCell>
                 <TaskPriorityBadge priority={task.priority} />
