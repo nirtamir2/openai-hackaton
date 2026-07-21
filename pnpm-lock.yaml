@@ -306,9 +306,9 @@ importers:
 
   apps/task-worker:
     dependencies:
-      '@app-template/ai':
+      '@app-template/api':
         specifier: workspace:*
-        version: link:../../packages/ai
+        version: link:../../packages/api
       '@app-template/db':
         specifier: workspace:*
         version: link:../../packages/db
@@ -560,7 +560,7 @@ importers:
         version: 0.17.1(@tanstack/ai@0.42.0)(ws@8.20.0)(zod@4.3.6)
       openai:
         specifier: ^4.0.0
-        version: 4.104.0(ws@8.20.0)(zod@3.25.76)
+        version: 4.104.0(ws@8.20.0)(zod@4.3.6)
       zod:
         specifier: 'catalog:'
         version: 4.3.6
@@ -574,6 +574,9 @@ importers:
 
   packages/api:
     dependencies:
+      '@app-template/ai':
+        specifier: workspace:*
+        version: link:../ai
       '@app-template/auth':
         specifier: workspace:*
         version: link:../auth
@@ -586,6 +589,12 @@ importers:
       '@orpc/server':
         specifier: 'catalog:'
         version: 1.14.0(crossws@0.4.5(srvx@0.11.15))(ws@8.20.0)
+      '@tanstack/ai':
+        specifier: 'catalog:'
+        version: 0.42.0
+      '@tanstack/ai-openai':
+        specifier: 'catalog:'
+        version: 0.17.1(@tanstack/ai@0.42.0)(ws@8.20.0)(zod@4.3.6)
       zod:
         specifier: 'catalog:'
         version: 4.3.6
@@ -13776,6 +13785,21 @@ snapshots:
     optionalDependencies:
       ws: 8.20.0
       zod: 3.25.76
+    transitivePeerDependencies:
+      - encoding
+
+  openai@4.104.0(ws@8.20.0)(zod@4.3.6):
+    dependencies:
+      '@types/node': 18.19.130
+      '@types/node-fetch': 2.6.13
+      abort-controller: 3.0.0
+      agentkeepalive: 4.6.0
+      form-data-encoder: 1.7.2
+      formdata-node: 4.4.1
+      node-fetch: 2.7.0
+    optionalDependencies:
+      ws: 8.20.0
+      zod: 4.3.6
     transitivePeerDependencies:
       - encoding
 

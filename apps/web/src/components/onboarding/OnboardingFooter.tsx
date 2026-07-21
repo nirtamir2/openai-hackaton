@@ -7,6 +7,7 @@ interface Props {
   onContinue: () => void;
   continueLabel?: string;
   isContinueDisabled?: boolean;
+  isBackDisabled?: boolean;
 }
 
 export function OnboardingFooter({
@@ -14,13 +15,14 @@ export function OnboardingFooter({
   onContinue,
   continueLabel = "Continue",
   isContinueDisabled = false,
+  isBackDisabled = false,
 }: Props) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-4 border-t border-[rgba(23,20,15,0.1)] pt-6">
       {onBack == null ? (
         <div />
       ) : (
-        <SignalButton variant="tertiary" onClick={onBack}>
+        <SignalButton variant="tertiary" onClick={onBack} disabled={isBackDisabled}>
           <ArrowLeft className="size-4" />
           Back
         </SignalButton>

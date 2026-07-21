@@ -2,6 +2,7 @@ import prisma, { GrowthFeedEntryKind, GrowthIdeaStatus } from "@app-template/db"
 import { ORPCError } from "@orpc/server";
 import { z } from "zod";
 import { mapGrowthFeedEntries } from "../feed/mapGrowthFeedEntries";
+import { syncMarketingTasksToGrowthFeed } from "../feed/syncMarketingTasksToGrowthFeed";
 import { publicProcedure } from "../index";
 
 const productIdSchema = z.object({
@@ -60,6 +61,8 @@ export const feedRouter = {
     if (product == null) {
       throw new ORPCError("NOT_FOUND");
     }
+
+    await syncMarketingTasksToGrowthFeed({ productId: input.productId });
 
     const entries = await prisma.productGrowthFeedEntry.findMany({
       where: { productId: input.productId },

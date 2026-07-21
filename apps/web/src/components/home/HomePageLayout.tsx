@@ -6,7 +6,7 @@ import clsx from "clsx";
 import { Home, ListTodo, Menu, Settings, X } from "lucide-react";
 import { SignalButton } from "@/components/home/SignalButton";
 import { HomeLanguageSwitcher } from "@/components/home/HomeLanguageSwitcher";
-import { MOCK_PRODUCT_ID } from "@app-template/db/mockProductId";
+import { getOnboardingProductId } from "@/components/onboarding/onboardingStorage";
 import { m } from "@/paraglide/messages.js";
 import { appName } from "@/utils/appName";
 import { getTextDirection } from "@/paraglide/runtime.js";
@@ -67,25 +67,27 @@ function HomeSidebarContent({
   session: Props["session"];
   onNavigate: (() => void) | null;
 }) {
+  const productId = getOnboardingProductId();
   const navItems: Array<NavItem> = [
     { to: "/", label: m.home(), icon: Home, active: true },
   ];
 
   if (session?.user != null) {
-    navItems.push(
-      {
+    if (productId.length > 0) {
+      navItems.push({
         to: "/products/$productId/tasks",
         label: "Marketing Tasks",
         icon: ListTodo,
-        params: { productId: MOCK_PRODUCT_ID },
-      },
-      {
-        to: "/settings/$path",
-        label: m.account(),
-        icon: Settings,
-        params: { path: "account" },
-      },
-    );
+        params: { productId },
+      });
+    }
+
+    navItems.push({
+      to: "/settings/$path",
+      label: m.account(),
+      icon: Settings,
+      params: { path: "account" },
+    });
   }
 
   return (

@@ -14,6 +14,7 @@ interface Props {
   state: OnboardingState;
   onBack: () => void;
   onComplete: () => void;
+  isCompleting?: boolean;
 }
 
 function getLabels({
@@ -37,7 +38,7 @@ function SummarySection({ title, children }: { title: string; children: ReactNod
   );
 }
 
-export function ReportStep({ state, onBack, onComplete }: Props) {
+export function ReportStep({ state, onBack, onComplete, isCompleting = false }: Props) {
   const targetMarketLabels = getLabels({
     ids: state.targetMarkets,
     options: targetMarketOptions,
@@ -152,7 +153,13 @@ export function ReportStep({ state, onBack, onComplete }: Props) {
         </section>
       </div>
 
-      <OnboardingFooter onBack={onBack} onContinue={onComplete} continueLabel="Launch feed" />
+      <OnboardingFooter
+        onBack={onBack}
+        onContinue={onComplete}
+        continueLabel={isCompleting ? "Saving..." : "Launch feed"}
+        isContinueDisabled={isCompleting}
+        isBackDisabled={isCompleting}
+      />
     </OnboardingCard>
   );
 }

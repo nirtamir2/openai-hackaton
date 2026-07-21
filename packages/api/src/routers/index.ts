@@ -3,7 +3,9 @@ import { ORPCError } from "@orpc/server";
 import { z } from "zod";
 import { generateMarketingTasks } from "@app-template/ai";
 import prisma from "@app-template/db";
-import { protectedProcedure, publicProcedure } from "../index";
+import { publicProcedure } from "../index";
+import { syncMarketingTaskToGrowthFeed } from "../feed/syncMarketingTasksToGrowthFeed";
+import { createProductMarketingTask } from "../marketing/createProductMarketingTask";
 import { getProductSentimentContext } from "../sentiment/getProductSentimentContext";
 import { calendarRouter } from "./calendar";
 import { feedRouter } from "./feed";
@@ -14,18 +16,24 @@ export const appRouter = {
   healthCheck: publicProcedure.handler(() => {
     return "OK";
   }),
-  privateData: protectedProcedure.handler(({ context }) => {
+  privateData: publicProcedure.handler(({ context }) => {
     return {
       message: "This is private",
-      user: context.session.user,
+      user: context.session?.user ?? null,
     };
   }),
   calendar: calendarRouter,
   feed: feedRouter,
   onboarding: onboardingRouter,
   sentiment: sentimentRouter,
-  generateMarketingTasks: protectedProcedure
-    .input(z.object({ productId: z.uuid() }))
+  generateMarketingTasks: publicProcedure
+    .input(
+      z.object({
+        productId: z.uuid(),
+        trendId: z.uuid().optional(),
+        taskCount: z.union([z.literal(1), z.literal(3)]).default(3),
+      }),
+    )
     .handler(async ({ input }) => {
       const marketSentiment = await getProductSentimentContext({
         productId: input.productId,
@@ -35,19 +43,49 @@ export const appRouter = {
         throw new ORPCError("NOT_FOUND");
       }
 
+      const trend =
+        input.trendId == null
+          ? null
+          : await prisma.trend.findUnique({
+              where: {
+                id: input.trendId,
+              },
+            });
+
+      if (input.trendId != null && trend == null) {
+        throw new ORPCError("NOT_FOUND");
+      }
+
       const generatedTasks = await generateMarketingTasks({
         context: {
-          ...marketSentiment,
-          trend: null,
+          product: marketSentiment.product,
+          marketingTasks: marketSentiment.marketingTasks,
+          sentiments: marketSentiment.sentiments,
+          trend:
+            trend == null
+              ? null
+              : {
+                  source: trend.source,
+                  type: trend.type,
+                  description: trend.description,
+                  popularExamples: trend.popularExamples,
+                },
         },
-        taskCount: 3,
+        taskCount: input.taskCount,
       });
-      const marketingTasks = await prisma.productMarketingTask.createManyAndReturn({
-        data: generatedTasks.map((task) => ({
-          ...task,
-          productId: marketSentiment.product.id,
-        })),
-      });
+      const marketingTasks = await Promise.all(
+        generatedTasks.map(async (task) =>
+          createProductMarketingTask({
+            ...task,
+            productId: marketSentiment.product.id,
+            trendId: input.trendId ?? null,
+          }),
+        ),
+      );
+
+      await Promise.all(
+        marketingTasks.map(async (task) => syncMarketingTaskToGrowthFeed(task)),
+      );
 
       return {
         productId: marketSentiment.product.id,

@@ -6,7 +6,7 @@
     "start": "tsx --env-file=../../apps/web/.env src/index.ts"
   },
   "dependencies": {
-    "@app-template/ai": "workspace:*",
+    "@app-template/api": "workspace:*",
     "@app-template/db": "workspace:*",
     "@app-template/env": "workspace:*",
     "@app-template/worker-runner": "workspace:*"

@@ -75,6 +75,44 @@ const marketingTaskSchema = z.object({
   }),
 });
 
+function buildMarketingTaskPlanSchema({ taskCount }: { taskCount: 1 | 3 }) {
+  return z.object({
+    tasks: z.array(marketingTaskSchema).length(taskCount),
+  });
+}
+
+function getMarketingTaskOutputTokenLimit({ taskCount }: { taskCount: 1 | 3 }) {
+  return taskCount === 1 ? 2_500 : 4_000;
+}
+
+function extractJsonObject({ text }: { text: string }) {
+  const trimmedText = text.trim();
+  const fenceStart = trimmedText.indexOf("```");
+
+  let candidate = trimmedText;
+
+  if (fenceStart !== -1) {
+    const fenceEnd = trimmedText.indexOf("```", fenceStart + 3);
+
+    if (fenceEnd !== -1) {
+      candidate = trimmedText.slice(fenceStart + 3, fenceEnd).trim();
+
+      if (candidate.toLowerCase().startsWith("json")) {
+        candidate = candidate.slice(4).trim();
+      }
+    }
+  }
+
+  const startIndex = candidate.indexOf("{");
+  const endIndex = candidate.lastIndexOf("}");
+
+  if (startIndex === -1 || endIndex === -1 || endIndex <= startIndex) {
+    throw new Error("Marketing task generation did not return valid JSON.");
+  }
+
+  return JSON.parse(candidate.slice(startIndex, endIndex + 1)) as unknown;
+}
+
 function getToday() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -126,13 +164,12 @@ function buildMarketingTaskSystemPrompt({
   ].join("\n");
 }
 
-export async function generateMarketingTasks({
+async function generateMarketingTasksWithStructuredOutput({
   context,
   taskCount,
-}: GenerateMarketingTasksProps): Promise<GeneratedMarketingTask[]> {
-  const today = getToday();
-  const latestTargetDate = getLatestTargetDate({ today });
-  const generatedPlan = await chat({
+  today,
+}: GenerateMarketingTasksProps & { today: string }) {
+  return await chat({
     adapter: createOpenaiChat("gpt-5-mini", env.OPENAI_API_KEY),
     systemPrompts: [buildMarketingTaskSystemPrompt({ context, taskCount, today })],
     messages: [
@@ -141,13 +178,65 @@ export async function generateMarketingTasks({
         content: "Generate the marketing task plan now.",
       },
     ],
-    outputSchema: z.object({
-      tasks: z.array(marketingTaskSchema).length(taskCount),
-    }),
+    outputSchema: buildMarketingTaskPlanSchema({ taskCount }),
     modelOptions: {
-      max_output_tokens: 1_200,
+      max_output_tokens: getMarketingTaskOutputTokenLimit({ taskCount }),
     },
   });
+}
+
+async function generateMarketingTasksWithJsonFallback({
+  context,
+  taskCount,
+  today,
+}: GenerateMarketingTasksProps & { today: string }) {
+  const responseText = await chat({
+    adapter: createOpenaiChat("gpt-5-mini", env.OPENAI_API_KEY),
+    systemPrompts: [
+      buildMarketingTaskSystemPrompt({ context, taskCount, today }),
+      [
+        `Return only a single JSON object with a "tasks" array containing exactly ${String(taskCount)} task object${taskCount === 1 ? "" : "s"}.`,
+        "Each task must include description, taskType, priority, and targetDate.",
+        "Do not include markdown fences or commentary.",
+      ].join("\n"),
+    ],
+    messages: [
+      {
+        role: "user",
+        content: "Generate the marketing task plan now.",
+      },
+    ],
+    stream: false,
+    modelOptions: {
+      max_output_tokens: getMarketingTaskOutputTokenLimit({ taskCount }),
+    },
+  });
+
+  const parsedJson = extractJsonObject({ text: responseText });
+  return buildMarketingTaskPlanSchema({ taskCount }).parse(parsedJson);
+}
+
+export async function generateMarketingTasks({
+  context,
+  taskCount,
+}: GenerateMarketingTasksProps): Promise<GeneratedMarketingTask[]> {
+  const today = getToday();
+  const latestTargetDate = getLatestTargetDate({ today });
+  let generatedPlan;
+
+  try {
+    generatedPlan = await generateMarketingTasksWithStructuredOutput({
+      context,
+      taskCount,
+      today,
+    });
+  } catch {
+    generatedPlan = await generateMarketingTasksWithJsonFallback({
+      context,
+      taskCount,
+      today,
+    });
+  }
 
   const existingDescriptions = new Set(
     context.marketingTasks.map(({ description }) => description.trim().toLowerCase()),
