@@ -1,4 +1,5 @@
 import prisma from "@app-template/db";
+import { readProductMarketingProfile } from "../marketing/readProductMarketingProfile";
 
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
 
@@ -37,6 +38,10 @@ export async function getProductSentimentContext({ productId }: { productId: str
       minusSides: product.minusSides,
       mainCompetitors: product.mainCompetitors,
     },
+    marketingProfile: readProductMarketingProfile({
+      websiteUrl: product.websiteUrl,
+      onboardingConfig: product.onboardingConfig,
+    }),
     marketingTasks: product.marketingTasks.map((task) => ({
       description: task.description,
       taskType: task.taskType,

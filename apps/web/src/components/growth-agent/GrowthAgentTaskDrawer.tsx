@@ -1,6 +1,7 @@
 import { Drawer } from "@base-ui/react/drawer";
 import clsx from "clsx";
 import { Check, Clock, ExternalLink, X } from "lucide-react";
+import type { ReactNode } from "react";
 import { useState } from "react";
 import type {
   GrowthAgentFeedItem,
@@ -30,6 +31,35 @@ function DrawerSectionLabel({ children }: { children: string }) {
     <p className="mb-2.5 font-mono text-[10.5px] font-semibold tracking-[0.3px] text-[rgba(23,20,15,0.4)] uppercase">
       {children}
     </p>
+  );
+}
+
+function getDrawerContentKey(content: DrawerContent) {
+  if (content.kind === "item") {
+    return `item-${content.item.id}`;
+  }
+
+  if (content.kind === "project") {
+    return `project-${content.project.id}`;
+  }
+
+  return `idea-${content.idea.id}`;
+}
+
+function TaskPreviewSection({
+  children,
+  delayMs,
+}: {
+  children: ReactNode;
+  delayMs: number;
+}) {
+  return (
+    <div
+      className="growth-task-preview-enter"
+      style={{ animationDelay: `${String(delayMs)}ms` }}
+    >
+      {children}
+    </div>
   );
 }
 
@@ -74,17 +104,18 @@ export function GrowthAgentTaskDrawer({
       }}
     >
       <Drawer.Portal>
-        <Drawer.Backdrop className="fixed inset-0 z-20 bg-[rgba(23,20,15,0.4)]" />
+        <Drawer.Backdrop className="fixed inset-0 z-20 bg-[rgba(23,20,15,0.4)] transition-opacity data-ending-style:opacity-0 data-starting-style:opacity-0" />
         <Drawer.Viewport className="fixed inset-0 z-20 flex justify-end">
           <Drawer.Popup
-            className="flex h-full w-[min(460px,100vw)] flex-col overflow-y-auto bg-white p-[30px] shadow-[-8px_0_24px_rgba(23,20,15,0.15)]"
+            className="flex h-full w-[min(460px,100vw)] flex-col overflow-y-auto bg-white p-[30px] shadow-[-8px_0_24px_rgba(23,20,15,0.15)] transition-transform data-ending-style:translate-x-full data-starting-style:translate-x-full data-ending-style:duration-200 motion-reduce:transition-none motion-reduce:data-ending-style:translate-x-0 motion-reduce:data-starting-style:translate-x-0"
             onClick={(event) => {
               event.stopPropagation();
             }}
           >
             {content == null ? null : (
-              <>
-                <div className="mb-[22px] flex items-center justify-between">
+              <div key={getDrawerContentKey(content)} className="flex flex-col">
+                <TaskPreviewSection delayMs={0}>
+                  <div className="mb-[22px] flex items-center justify-between">
                   {content.kind === "item" ? (
                     <span
                       className="rounded-[5px] px-[9px] py-1 font-mono text-[11px] font-semibold tracking-[0.2px]"
@@ -118,6 +149,7 @@ export function GrowthAgentTaskDrawer({
                     <X className="size-5" />
                   </button>
                 </div>
+                </TaskPreviewSection>
 
                 {content.kind === "item" ? (
                   <ItemDrawerBody
@@ -187,7 +219,7 @@ export function GrowthAgentTaskDrawer({
                     }}
                   />
                 ) : null}
-              </>
+              </div>
             )}
           </Drawer.Popup>
         </Drawer.Viewport>
@@ -219,18 +251,29 @@ function ItemDrawerBody({
 }) {
   return (
     <>
-      <p className="mb-4 text-[12.5px] text-[rgba(23,20,15,0.45)]">{item.meta}</p>
+      <TaskPreviewSection delayMs={60}>
+        <p className="mb-4 text-[12.5px] text-[rgba(23,20,15,0.45)]">{item.meta}</p>
+      </TaskPreviewSection>
 
-      {item.why != null ? <WhyBlock text={item.why} /> : null}
+      {item.why != null ? (
+        <TaskPreviewSection delayMs={120}>
+          <WhyBlock text={item.why} />
+        </TaskPreviewSection>
+      ) : null}
 
       {item.type === "reddit" ? (
         <>
-          <p className="mb-5 text-[15px] leading-[1.6] text-[rgba(23,20,15,0.85)]">{item.quote}</p>
-          <div className="mb-4 rounded-[10px] border border-[rgba(23,20,15,0.08)] bg-[#f7f5f1] p-4">
-            <DrawerSectionLabel>Drafted reply</DrawerSectionLabel>
-            <p className="text-sm leading-[1.6] text-[rgba(23,20,15,0.85)]">{item.reply}</p>
-          </div>
-          <div className="mb-[18px] flex flex-wrap gap-2.5">
+          <TaskPreviewSection delayMs={180}>
+            <p className="mb-5 text-[15px] leading-[1.6] text-[rgba(23,20,15,0.85)]">{item.quote}</p>
+          </TaskPreviewSection>
+          <TaskPreviewSection delayMs={240}>
+            <div className="mb-4 rounded-[10px] border border-[rgba(23,20,15,0.08)] bg-[#f7f5f1] p-4">
+              <DrawerSectionLabel>Drafted reply</DrawerSectionLabel>
+              <p className="text-sm leading-[1.6] text-[rgba(23,20,15,0.85)]">{item.reply}</p>
+            </div>
+          </TaskPreviewSection>
+          <TaskPreviewSection delayMs={300}>
+            <div className="mb-[18px] flex flex-wrap gap-2.5">
             <SignalButton
               variant="primary"
               onClick={() => {
@@ -253,6 +296,8 @@ function ItemDrawerBody({
               </a>
             ) : null}
           </div>
+          </TaskPreviewSection>
+          <TaskPreviewSection delayMs={360}>
           <div className="flex items-center gap-2.5 border-t border-[rgba(23,20,15,0.08)] pt-[18px]">
             <SignalButton variant="accent" onClick={onMarkComplete}>
               Mark as posted
@@ -261,22 +306,30 @@ function ItemDrawerBody({
               Skip
             </SignalButton>
           </div>
+          </TaskPreviewSection>
         </>
       ) : null}
 
       {item.type === "ad" ? (
         <>
+          <TaskPreviewSection delayMs={180}>
           <div className="mb-[18px] flex h-[180px] flex-col items-center justify-center gap-2 rounded-[10px] border border-dashed border-[rgba(23,20,15,0.2)] text-[12.5px] text-[rgba(23,20,15,0.35)]">
             {item.creativeLabel}
           </div>
+          </TaskPreviewSection>
+          <TaskPreviewSection delayMs={240}>
           <div className="mb-3.5">
             <DrawerSectionLabel>Headline</DrawerSectionLabel>
             <p className="text-[15px] font-semibold text-[rgba(23,20,15,0.9)]">{item.headline}</p>
           </div>
+          </TaskPreviewSection>
+          <TaskPreviewSection delayMs={300}>
           <div className="mb-[18px]">
             <DrawerSectionLabel>Body copy</DrawerSectionLabel>
             <p className="text-sm leading-[1.6] text-[rgba(23,20,15,0.8)]">{item.body}</p>
           </div>
+          </TaskPreviewSection>
+          <TaskPreviewSection delayMs={360}>
           <div className="mb-[18px] flex gap-[18px] text-[13px] text-[rgba(23,20,15,0.6)]">
             <div>
               <span className="text-[rgba(23,20,15,0.4)]">Format</span>
@@ -291,23 +344,31 @@ function ItemDrawerBody({
               <p className="font-semibold text-[rgba(23,20,15,0.85)]">{item.budget}</p>
             </div>
           </div>
+          </TaskPreviewSection>
+          <TaskPreviewSection delayMs={420}>
           <div className="flex items-center gap-2.5 border-t border-[rgba(23,20,15,0.08)] pt-[18px]">
             <SignalButton variant="accent" onClick={onMarkComplete}>
               Create ad
             </SignalButton>
             <SignalButton variant="secondary">Edit copy</SignalButton>
           </div>
+          </TaskPreviewSection>
         </>
       ) : null}
 
       {item.type === "post" ? (
         <>
-          <div className="mb-4 rounded-[10px] border border-[rgba(23,20,15,0.08)] bg-[#f7f5f1] p-4">
-            <DrawerSectionLabel>Drafted post</DrawerSectionLabel>
-            <p className="text-sm leading-[1.6] whitespace-pre-line text-[rgba(23,20,15,0.85)]">
-              {item.draftBody}
-            </p>
-          </div>
+          {item.draftBody != null ? (
+            <TaskPreviewSection delayMs={180}>
+              <div className="mb-4 rounded-[10px] border border-[rgba(23,20,15,0.08)] bg-[#f7f5f1] p-4">
+                <DrawerSectionLabel>Drafted post</DrawerSectionLabel>
+                <p className="text-sm leading-[1.6] whitespace-pre-line text-[rgba(23,20,15,0.85)]">
+                  {item.draftBody}
+                </p>
+              </div>
+            </TaskPreviewSection>
+          ) : null}
+          <TaskPreviewSection delayMs={item.draftBody != null ? 260 : 180}>
           <div className="flex items-center gap-2.5 border-t border-[rgba(23,20,15,0.08)] pt-[18px]">
             <SignalButton
               variant="primary"
@@ -326,23 +387,29 @@ function ItemDrawerBody({
               Skip
             </SignalButton>
           </div>
+          </TaskPreviewSection>
         </>
       ) : null}
 
       {item.type === "newsjack" ? (
         <>
+          <TaskPreviewSection delayMs={180}>
           <div className="mb-3.5 rounded-[10px] border border-[rgba(23,20,15,0.08)] bg-[#f7f5f1] p-4">
             <DrawerSectionLabel>X post</DrawerSectionLabel>
             <p className="text-sm leading-[1.6] whitespace-pre-line text-[rgba(23,20,15,0.85)]">
               {item.draftBodyX}
             </p>
           </div>
+          </TaskPreviewSection>
+          <TaskPreviewSection delayMs={240}>
           <div className="mb-4 rounded-[10px] border border-[rgba(23,20,15,0.08)] bg-[#f7f5f1] p-4">
             <DrawerSectionLabel>LinkedIn post</DrawerSectionLabel>
             <p className="text-sm leading-[1.6] whitespace-pre-line text-[rgba(23,20,15,0.85)]">
               {item.draftBodyLinkedIn}
             </p>
           </div>
+          </TaskPreviewSection>
+          <TaskPreviewSection delayMs={300}>
           <div className="flex flex-wrap items-center gap-2.5 border-t border-[rgba(23,20,15,0.08)] pt-[18px]">
             <SignalButton
               variant="primary"
@@ -368,6 +435,7 @@ function ItemDrawerBody({
               Publish both
             </SignalButton>
           </div>
+          </TaskPreviewSection>
         </>
       ) : null}
     </>
@@ -386,17 +454,24 @@ function ProjectDrawerBody({
   return (
     <>
       {project.description != null ? (
-        <p className="mb-5 text-[14.5px] leading-[1.6] text-[rgba(23,20,15,0.85)]">
-          {project.description}
-        </p>
+        <TaskPreviewSection delayMs={60}>
+          <p className="mb-5 text-[14.5px] leading-[1.6] text-[rgba(23,20,15,0.85)]">
+            {project.description}
+          </p>
+        </TaskPreviewSection>
       ) : null}
 
-      {project.why != null ? <WhyBlock text={project.why} /> : null}
+      {project.why != null ? (
+        <TaskPreviewSection delayMs={120}>
+          <WhyBlock text={project.why} />
+        </TaskPreviewSection>
+      ) : null}
 
       {project.todos.length > 0 ? (
-        <>
-          <DrawerSectionLabel>To-do</DrawerSectionLabel>
-          <div className="flex flex-col gap-2.5">
+        <TaskPreviewSection delayMs={180}>
+          <>
+            <DrawerSectionLabel>To-do</DrawerSectionLabel>
+            <div className="flex flex-col gap-2.5">
             {project.todos.map((todo) => {
               const key = `${project.id}:${todo.id}`;
               const done = todoDone[key] ?? todo.done;
@@ -440,7 +515,8 @@ function ProjectDrawerBody({
               );
             })}
           </div>
-        </>
+          </>
+        </TaskPreviewSection>
       ) : null}
     </>
   );
@@ -459,12 +535,19 @@ function IdeaDrawerBody({
 }) {
   return (
     <>
-      <p className="mb-[22px] text-[14.5px] leading-[1.6] text-[rgba(23,20,15,0.85)]">
-        {idea.description}
-      </p>
+      <TaskPreviewSection delayMs={60}>
+        <p className="mb-[22px] text-[14.5px] leading-[1.6] text-[rgba(23,20,15,0.85)]">
+          {idea.description}
+        </p>
+      </TaskPreviewSection>
 
-      {idea.why != null ? <WhyBlock text={idea.why} /> : null}
+      {idea.why != null ? (
+        <TaskPreviewSection delayMs={120}>
+          <WhyBlock text={idea.why} />
+        </TaskPreviewSection>
+      ) : null}
 
+      <TaskPreviewSection delayMs={180}>
       <div className="flex flex-wrap items-center gap-2.5 border-t border-[rgba(23,20,15,0.08)] pt-[18px]">
         <SignalButton variant="primary" onClick={onApprove}>
           <Check className="size-[13px] stroke-[3]" />
@@ -478,6 +561,7 @@ function IdeaDrawerBody({
           Not interested
         </SignalButton>
       </div>
+      </TaskPreviewSection>
     </>
   );
 }

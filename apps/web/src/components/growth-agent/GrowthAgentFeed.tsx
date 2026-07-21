@@ -309,9 +309,10 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
       </p>
 
       <div className="mb-9 flex flex-col gap-2">
-        {visibleItems.map((item) => (
+        {visibleItems.map((item, index) => (
           <GrowthAgentFeedItemRow
             key={item.id}
+            index={index}
             item={item}
             completed={isCompleted(item)}
             onToggle={() => {

@@ -9,16 +9,6 @@ function getDayKeyFromDate(date: Date) {
   return dayKeys[date.getDay()] ?? "mon";
 }
 
-function getTaskTitle(description: string) {
-  const firstSentence = description.split(/[.!?]/)[0]?.trim() ?? description;
-
-  if (firstSentence.length <= 100) {
-    return firstSentence;
-  }
-
-  return `${firstSentence.slice(0, 97)}...`;
-}
-
 function buildMarketingTaskFeedPayload(task: ProductMarketingTaskModel) {
   const tag =
     task.taskType === MarketingTaskType.SHORT ? "SHORT-TERM TASK" : "LONG-TERM TASK";
@@ -28,7 +18,7 @@ function buildMarketingTaskFeedPayload(task: ProductMarketingTaskModel) {
     tag,
     color: "#2f6f4e",
     colorBg: "rgba(47,111,78,0.1)",
-    title: getTaskTitle(task.description),
+    title: task.description.trim(),
     meta: `AI generated · Priority ${String(task.priority)}`,
     why: task.description,
     marketingTaskId: task.id,
@@ -105,22 +95,5 @@ export async function syncMarketingTasksToGrowthFeed({ productId }: { productId:
     return;
   }
 
-  const existingEntries = await prisma.productGrowthFeedEntry.findMany({
-    where: {
-      productId,
-      externalId: {
-        startsWith: "marketing-task-",
-      },
-    },
-    select: {
-      externalId: true,
-    },
-  });
-
-  const existingExternalIds = new Set(existingEntries.map((entry) => entry.externalId));
-  const tasksToSync = todayTasks.filter(
-    (task) => !existingExternalIds.has(getMarketingTaskExternalId({ taskId: task.id })),
-  );
-
-  await Promise.all(tasksToSync.map((task) => syncMarketingTaskToGrowthFeed(task)));
+  await Promise.all(todayTasks.map((task) => syncMarketingTaskToGrowthFeed(task)));
 }
