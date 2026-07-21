@@ -23,28 +23,34 @@ export function PageLayout({
   children,
 }: Props) {
   return (
-    <div className="relative min-h-screen bg-app-canvas text-app-text">
+    <div className="relative min-h-screen bg-background text-foreground">
       <div className="relative flex min-h-screen flex-col">
-        <header className="sticky top-0 z-20 border-b border-app-border bg-app-canvas/88 backdrop-blur-md">
+        <header className="sticky top-0 z-20 border-b border-border bg-background/88 backdrop-blur-md">
           <div className="container mx-auto flex items-center justify-between gap-3 p-3 sm:p-4">
             <div className="flex min-w-0 items-center gap-3">
-              <MobileSideMenu headerAction={headerAction ?? null} headerControls={headerControls ?? null} />
+              <MobileSideMenu
+                headerAction={headerAction ?? null}
+                headerControls={headerControls ?? null}
+              />
               {onBack == null ? null : <PageBackButton onBack={onBack} />}
               <div className="min-w-0">
                 {title == null ? (
                   <Link
                     to="/"
-                    className="text-lg font-semibold tracking-tight transition-colors hover:text-app-accent"
+                    className="text-lg font-semibold tracking-tight transition-colors hover:text-primary"
                   >
                     {m.app_name()}
                   </Link>
                 ) : (
-                  <h1 className="truncate text-lg font-semibold tracking-tight md:text-2xl" dir="auto">
+                  <h1
+                    className="truncate text-lg font-semibold tracking-tight md:text-2xl"
+                    dir="auto"
+                  >
                     {title}
                   </h1>
                 )}
                 {subtitle == null ? null : (
-                  <p className="truncate text-sm text-app-text-subtle" dir="auto">
+                  <p className="truncate text-sm text-muted-foreground" dir="auto">
                     {subtitle}
                   </p>
                 )}
@@ -65,14 +71,17 @@ export function PageLayout({
 
         <main className="container mx-auto flex-1 px-3 py-5 sm:px-4 sm:py-8">{children}</main>
 
-        <footer className="border-t border-app-border bg-app-canvas/88">
-          <div className="container mx-auto flex flex-wrap items-center justify-center gap-3 p-4 text-xs text-app-text-subtle sm:justify-between">
+        <footer className="border-t border-border bg-background/88">
+          <div className="container mx-auto flex flex-wrap items-center justify-center gap-3 p-4 text-xs text-muted-foreground sm:justify-between">
             <p>{m.app_name()}</p>
             <nav className="flex flex-wrap items-center justify-center gap-3">
-              <Link to="/accessibility-statement" className="transition-colors hover:text-app-text">
+              <Link
+                to="/accessibility-statement"
+                className="transition-colors hover:text-foreground"
+              >
                 {m.accessibility_statement()}
               </Link>
-              <Link to="/privacy-policy" className="transition-colors hover:text-app-text">
+              <Link to="/privacy-policy" className="transition-colors hover:text-foreground">
                 {m.privacy_policy()}
               </Link>
             </nav>

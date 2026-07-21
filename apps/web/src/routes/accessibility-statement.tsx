@@ -35,13 +35,10 @@ function AccessibilityStatementPage() {
   ] as const;
 
   return (
-    <PageLayout
-      title={m.accessibility_statement()}
-      subtitle={m.accessibility_statement_subtitle()}
-    >
+    <PageLayout title={m.accessibility_statement()} subtitle={m.accessibility_statement_subtitle()}>
       <article className="mx-auto flex max-w-3xl flex-col gap-4">
-        <p className="text-sm text-app-text-subtle">{m.accessibility_statement_last_updated()}</p>
-        <p className="text-base/7 text-app-text-muted">{m.accessibility_statement_intro()}</p>
+        <p className="text-sm text-muted-foreground">{m.accessibility_statement_last_updated()}</p>
+        <p className="text-base/7 text-muted-foreground">{m.accessibility_statement_intro()}</p>
 
         {accessibilitySections.map((section) => (
           <Card key={section.title}>
@@ -49,7 +46,7 @@ function AccessibilityStatementPage() {
               <CardTitle>{section.title}</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm/6 text-app-text-muted">{section.body}</p>
+              <p className="text-sm/6 text-muted-foreground">{section.body}</p>
             </CardContent>
           </Card>
         ))}
@@ -60,7 +57,7 @@ function AccessibilityStatementPage() {
           </CardHeader>
           <CardContent>
             <div className="flex flex-col gap-3">
-              <p className="text-sm/6 text-app-text-muted">
+              <p className="text-sm/6 text-muted-foreground">
                 {m.accessibility_statement_contact_body()}
               </p>
               <a className={buttonVariants()} href={`mailto:${contactEmail}`} dir="ltr">

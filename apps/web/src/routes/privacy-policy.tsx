@@ -41,8 +41,8 @@ function PrivacyPolicyPage() {
   return (
     <PageLayout title={m.privacy_policy()} subtitle={m.privacy_policy_subtitle()}>
       <article className="mx-auto flex max-w-3xl flex-col gap-4">
-        <p className="text-sm text-app-text-subtle">{m.privacy_policy_last_updated()}</p>
-        <p className="text-base/7 text-app-text-muted">{m.privacy_policy_intro()}</p>
+        <p className="text-sm text-muted-foreground">{m.privacy_policy_last_updated()}</p>
+        <p className="text-base/7 text-muted-foreground">{m.privacy_policy_intro()}</p>
 
         {policySections.map((section) => (
           <Card key={section.title}>
@@ -50,7 +50,7 @@ function PrivacyPolicyPage() {
               <CardTitle>{section.title}</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm/6 text-app-text-muted">{section.body}</p>
+              <p className="text-sm/6 text-muted-foreground">{section.body}</p>
             </CardContent>
           </Card>
         ))}
@@ -61,7 +61,7 @@ function PrivacyPolicyPage() {
           </CardHeader>
           <CardContent>
             <div className="flex flex-col gap-3">
-              <p className="text-sm/6 text-app-text-muted">{m.privacy_policy_contact_body()}</p>
+              <p className="text-sm/6 text-muted-foreground">{m.privacy_policy_contact_body()}</p>
               <a className={buttonVariants()} href={`mailto:${contactEmail}`} dir="ltr">
                 <Mail className="size-4" />
                 {contactEmail}

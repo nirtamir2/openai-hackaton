@@ -24,7 +24,7 @@ function DialogOverlay(props: Omit<DialogPrimitive.Backdrop.Props, "className">)
   return (
     <DialogPrimitive.Backdrop
       data-slot="dialog-overlay"
-      className="fixed inset-0 isolate z-50 bg-black/70 backdrop-blur-sm transition-opacity duration-200 ease-(--ease-app-out) data-open:opacity-100 data-closed:opacity-0"
+      className="fixed inset-0 isolate z-50 bg-black/50 transition-opacity data-open:opacity-100 data-closed:opacity-0"
       {...props}
     />
   );
@@ -44,14 +44,14 @@ function DialogContent({
       <DialogOverlay />
       <DialogPrimitive.Popup
         data-slot="dialog-content"
-        className="fixed top-[max(1rem,env(safe-area-inset-top))] left-1/2 z-50 grid max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-md -translate-x-1/2 gap-4 overflow-y-auto overscroll-contain rounded-xl border border-app-border bg-app-surface-raised p-5 pt-14 text-app-text shadow-(--app-shadow-raised) transition-[transform,opacity] duration-200 ease-(--ease-app-out) outline-none sm:top-1/2 sm:w-full sm:-translate-y-1/2 sm:p-6 data-open:scale-100 data-open:opacity-100 data-closed:scale-95 data-closed:opacity-0"
+        className="fixed top-[max(1rem,env(safe-area-inset-top))] left-1/2 z-50 grid max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] max-w-md -translate-x-1/2 gap-4 overflow-y-auto overscroll-contain rounded-lg border border-border bg-background p-5 pt-14 text-foreground shadow-lg transition-[transform,opacity] outline-none sm:top-1/2 sm:w-full sm:-translate-y-1/2 sm:p-6 data-open:scale-100 data-open:opacity-100 data-closed:scale-95 data-closed:opacity-0"
         {...props}
       >
         {children}
         {showCloseButton ? (
           <DialogPrimitive.Close
             data-slot="dialog-close"
-            className="absolute inset-e-3 top-2 flex size-11 items-center justify-center rounded-xl text-app-text-subtle transition-[transform,background-color,color] duration-150 ease-(--ease-app-out) hover:bg-app-surface-muted hover:text-app-text focus-visible:ring-2 focus-visible:ring-app-blue/50 focus-visible:outline-none active:scale-[0.97] sm:inset-e-4 sm:top-4 sm:size-8 sm:rounded-lg"
+            className="absolute inset-e-3 top-2 flex size-11 items-center justify-center rounded-md text-muted-foreground opacity-70 transition-opacity hover:bg-accent hover:text-accent-foreground hover:opacity-100 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none sm:inset-e-4 sm:top-4 sm:size-8"
           >
             <XIcon className="size-4" />
             <span className="sr-only">{m.dialog_close()}</span>
@@ -67,14 +67,14 @@ function DialogHeader(props: Omit<React.ComponentProps<"div">, "className">) {
 }
 
 function DialogFooter(props: Omit<React.ComponentProps<"div">, "className">) {
-  return <div data-slot="dialog-footer" className="mt-2 flex justify-end gap-3" {...props} />;
+  return <div data-slot="dialog-footer" className="flex justify-end gap-2 pt-2" {...props} />;
 }
 
 function DialogTitle(props: Omit<DialogPrimitive.Title.Props, "className">) {
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      className="text-lg font-bold text-app-text"
+      className="text-lg leading-none font-semibold text-foreground"
       {...props}
     />
   );
@@ -84,7 +84,7 @@ function DialogDescription(props: Omit<DialogPrimitive.Description.Props, "class
   return (
     <DialogPrimitive.Description
       data-slot="dialog-description"
-      className="text-sm text-app-text-muted"
+      className="text-sm text-muted-foreground"
       {...props}
     />
   );

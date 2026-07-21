@@ -24,12 +24,14 @@ export function MobileSideMenu({ headerAction, headerControls }: Props) {
   return (
     <div className="md:hidden">
       <Drawer.Root open={isOpen} onOpenChange={setIsOpen} swipeDirection={side}>
-        <Drawer.Trigger render={<Button variant="secondary" size="icon-sm" aria-label={m.menu_open()} />}>
+        <Drawer.Trigger
+          render={<Button variant="secondary" size="icon-sm" aria-label={m.menu_open()} />}
+        >
           <Menu className="size-4" />
         </Drawer.Trigger>
 
         <Drawer.Portal>
-          <Drawer.Backdrop className="fixed inset-0 z-50 bg-black/70 transition-opacity duration-200 data-ending-style:opacity-0 data-starting-style:opacity-0" />
+          <Drawer.Backdrop className="fixed inset-0 z-50 bg-black/50 transition-opacity data-ending-style:opacity-0 data-starting-style:opacity-0" />
           <Drawer.Viewport
             className={clsx(
               "fixed inset-0 z-50 flex p-0",
@@ -38,7 +40,7 @@ export function MobileSideMenu({ headerAction, headerControls }: Props) {
           >
             <Drawer.Popup
               className={clsx(
-                "flex h-full w-80 max-w-[calc(100vw-3rem)] flex-col gap-5 border-app-border bg-app-canvas p-5 text-app-text shadow-(--app-shadow-raised) transition-transform duration-200 ease-(--ease-app-out) data-ending-style:duration-150",
+                "flex h-full w-80 max-w-[calc(100vw-3rem)] flex-col gap-5 border-border bg-background p-5 text-foreground shadow-lg transition-transform data-ending-style:duration-150",
                 side === "right"
                   ? "border-s data-ending-style:translate-x-full data-starting-style:translate-x-full"
                   : "border-e data-ending-style:-translate-x-full data-starting-style:-translate-x-full",
@@ -51,7 +53,9 @@ export function MobileSideMenu({ headerAction, headerControls }: Props) {
                 <Drawer.Description className="sr-only">
                   {m.mobile_navigation_description()}
                 </Drawer.Description>
-                <Drawer.Close render={<Button variant="ghost" size="icon-sm" aria-label={m.menu_close()} />}>
+                <Drawer.Close
+                  render={<Button variant="ghost" size="icon-sm" aria-label={m.menu_close()} />}
+                >
                   <X className="size-4" />
                 </Drawer.Close>
               </header>
@@ -59,7 +63,7 @@ export function MobileSideMenu({ headerAction, headerControls }: Props) {
               <nav className="grid gap-2">
                 <Link
                   to="/"
-                  className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-app-text-muted transition-colors hover:bg-app-surface-soft hover:text-app-text"
+                  className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-foreground transition-colors hover:bg-accent hover:text-accent-foreground"
                   onClick={() => {
                     setIsOpen(false);
                   }}

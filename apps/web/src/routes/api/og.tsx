@@ -70,8 +70,8 @@ async function handleGet({ request }: { request: Request }) {
   return new ImageResponse(
     <div
       style={{
-        background: "linear-gradient(135deg, #0b1020 0%, #141a2f 55%, #10241f 100%)",
-        color: "#f8fafc",
+        background: "#ffffff",
+        color: "#171717",
         display: "flex",
         flexDirection: "column",
         fontFamily: "Inter",
@@ -84,7 +84,7 @@ async function handleGet({ request }: { request: Request }) {
     >
       <div
         style={{
-          color: "#2dd4bf",
+          color: "#525252",
           display: "flex",
           fontSize: "26px",
           fontWeight: 700,
@@ -109,7 +109,7 @@ async function handleGet({ request }: { request: Request }) {
       {ogQuery.subtitle == null ? null : (
         <div
           style={{
-            color: "rgba(248,250,252,0.72)",
+            color: "#737373",
             display: "flex",
             fontSize: "30px",
             lineHeight: 1.35,
