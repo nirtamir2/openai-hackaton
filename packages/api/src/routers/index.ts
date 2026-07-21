@@ -65,6 +65,7 @@ export const appRouter = {
       const generatedTasks = await generateMarketingTasks({
         context: {
           product: marketSentiment.product,
+          marketingProfile: marketSentiment.marketingProfile,
           marketingTasks: marketSentiment.marketingTasks,
           sentiments: marketSentiment.sentiments,
           trend:
