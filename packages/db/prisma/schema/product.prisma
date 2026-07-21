@@ -1,0 +1,34 @@
+enum MarketingTaskType {
+  SHORT @map("short")
+  LONG  @map("long")
+}
+
+model Product {
+  id                 String                 @id @default(uuid()) @db.Uuid
+  generalDescription String                 @map("general_description")
+  plusSides          String                 @map("plus_sides")
+  minusSides         String                 @map("minus_sides")
+  mainCompetitors    String                 @map("main_competitors")
+  createdAt          DateTime               @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt          DateTime               @updatedAt @map("updated_at") @db.Timestamptz
+  marketingTasks     ProductMarketingTask[]
+
+  @@map("products")
+}
+
+model ProductMarketingTask {
+  id          String            @id @default(uuid()) @db.Uuid
+  productId   String            @map("product_id") @db.Uuid
+  description String
+  taskType    MarketingTaskType @map("task_type")
+  priority    Int
+  targetDate  DateTime          @map("target_date") @db.Timestamptz
+  createdAt   DateTime          @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime          @updatedAt @map("updated_at") @db.Timestamptz
+  product     Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([targetDate])
+  @@index([priority])
+  @@map("product_marketing_tasks")
+}
