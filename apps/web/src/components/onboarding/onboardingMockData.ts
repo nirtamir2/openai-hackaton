@@ -99,27 +99,3 @@ export function createInitialOnboardingState(): OnboardingState {
     },
   };
 }
-
-export const mockRevenueDashboard = {
-  last30Days: {
-    revenue: "$24,380",
-    adSpend: "$6,120",
-    profit: "$18,260",
-    newCustomers: "142",
-  },
-  dailyRevenue: [
-    { day: "Mon", amount: 680 },
-    { day: "Tue", amount: 920 },
-    { day: "Wed", amount: 740 },
-    { day: "Thu", amount: 1100 },
-    { day: "Fri", amount: 890 },
-    { day: "Sat", amount: 620 },
-    { day: "Sun", amount: 540 },
-  ],
-  revenueBySource: [
-    { source: "Reddit (agent replies)", amount: "$8,420", percent: 35 },
-    { source: "Meta Ads", amount: "$7,100", percent: 29 },
-    { source: "Google Search Ads", amount: "$4,860", percent: 20 },
-    { source: "Direct / unattributed", amount: "$4,000", percent: 16 },
-  ],
-} as const;

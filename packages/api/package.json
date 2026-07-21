@@ -13,6 +13,7 @@
     "type-check": "tsgo --noEmit"
   },
   "dependencies": {
+    "@app-template/ai": "workspace:*",
     "@app-template/auth": "workspace:*",
     "@app-template/db": "workspace:*",
     "@app-template/env": "workspace:*",

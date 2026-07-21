@@ -6,11 +6,10 @@
     "start": "tsx --env-file=../../apps/web/.env src/index.ts"
   },
   "dependencies": {
-    "@app-template/ai": "workspace:*",
-    "@app-template/worker-runner": "workspace:*",
+    "@app-template/api": "workspace:*",
     "@app-template/db": "workspace:*",
     "@app-template/env": "workspace:*",
-    "openai": "^4.0.0"
+    "@app-template/worker-runner": "workspace:*"
   },
   "devDependencies": {
     "@app-template/config": "workspace:*",

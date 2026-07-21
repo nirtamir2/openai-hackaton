@@ -1,12 +1,16 @@
-import { MOCK_PRODUCT_ID } from "@app-template/db/mockProductId";
+import { useMutation } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
+import { toast } from "sonner";
 import { getCompanyNameFromUrl } from "@/components/growth-agent/growthAgentTypes";
 import { DailyPlanGenerationProgress } from "@/components/onboarding/DailyPlanGenerationProgress";
 import { OnboardingLayout } from "@/components/onboarding/OnboardingLayout";
 import { createInitialOnboardingState } from "@/components/onboarding/onboardingMockData";
 import { onboardingSteps } from "@/components/onboarding/onboardingSteps";
-import { saveOnboardingCompanyName } from "@/components/onboarding/onboardingStorage";
+import {
+  saveOnboardingCompanyName,
+  saveOnboardingProductId,
+} from "@/components/onboarding/onboardingStorage";
 import type { OnboardingState } from "@/components/onboarding/onboardingTypes";
 import { CapacityStep } from "@/components/onboarding/steps/CapacityStep";
 import { ChannelsStep } from "@/components/onboarding/steps/ChannelsStep";
@@ -14,6 +18,8 @@ import { IntegrationStep } from "@/components/onboarding/steps/IntegrationStep";
 import { PersonalityStep } from "@/components/onboarding/steps/PersonalityStep";
 import { TargetMarketStep } from "@/components/onboarding/steps/TargetMarketStep";
 import { WebsiteInputStep } from "@/components/onboarding/steps/WebsiteInputStep";
+import { getOrpcErrorMessage } from "@/utils/getOrpcErrorMessage";
+import { orpc } from "@/utils/orpc";
 
 export function OnboardingWizard() {
   const navigate = useNavigate();
@@ -21,15 +27,39 @@ export function OnboardingWizard() {
   const [state, setState] = useState<OnboardingState>(createInitialOnboardingState);
   const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
 
+  const completeOnboardingMutation = useMutation(
+    orpc.onboarding.completeOnboarding.mutationOptions({
+      onSuccess: (result, onboardingState) => {
+        const companyName = getCompanyNameFromUrl({ url: onboardingState.website.url });
+        saveOnboardingCompanyName({ companyName });
+        saveOnboardingProductId({ productId: result.productId });
+        toast.success("Onboarding saved.");
+
+        void navigate({
+          to: "/products/$productId/feed",
+          params: { productId: result.productId },
+        });
+      },
+      onError: (error) => {
+        toast.error(getOrpcErrorMessage({ error }));
+      },
+    }),
+  );
+
   const currentStepId = onboardingSteps[currentStepIndex].id;
 
   function handleOnboardingComplete() {
-    const companyName = getCompanyNameFromUrl({ url: state.website.url });
-    saveOnboardingCompanyName({ companyName });
+    if (state.personality == null) {
+      return;
+    }
 
-    void navigate({
-      to: "/products/$productId/feed",
-      params: { productId: MOCK_PRODUCT_ID },
+    completeOnboardingMutation.mutate({
+      website: state.website,
+      targetMarkets: state.targetMarkets,
+      personality: [state.personality],
+      channels: state.channels,
+      capacity: state.capacity,
+      integrations: state.integrations,
     });
   }
 

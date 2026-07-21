@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { MOCK_PRODUCT_ID } from "@app-template/db/mockProductId";
 import { GrowthAgentDashboard } from "@/components/growth-agent/GrowthAgentDashboard";
 import { getCompanyNameFromUrl } from "@/components/growth-agent/growthAgentTypes";
 import { getOnboardingCompanyName } from "@/components/onboarding/onboardingStorage";
@@ -43,7 +42,7 @@ function GrowthAgentFeedPage() {
   return (
     <GrowthAgentDashboard
       companyName={companyName}
-      productId={productId.length > 0 ? productId : MOCK_PRODUCT_ID}
+      productId={productId}
     />
   );
 }

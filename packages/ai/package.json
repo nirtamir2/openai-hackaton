@@ -8,11 +8,15 @@
     }
   },
   "dependencies": {
-    "openai": "^4.0.0"
+    "@app-template/db": "workspace:*",
+    "@app-template/env": "workspace:*",
+    "@tanstack/ai": "catalog:",
+    "@tanstack/ai-openai": "catalog:",
+    "openai": "^4.0.0",
+    "zod": "catalog:"
   },
   "devDependencies": {
     "@app-template/config": "workspace:*",
-    "@app-template/db": "workspace:*",
     "typescript": "catalog:"
   }
 }

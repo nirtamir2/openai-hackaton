@@ -1,7 +1,8 @@
 import prisma, { MarketingTaskType } from "@app-template/db";
 import { ORPCError } from "@orpc/server";
 import { z } from "zod";
-import { protectedProcedure } from "../index";
+import { createProductMarketingTask } from "../marketing/createProductMarketingTask";
+import { publicProcedure } from "../index";
 
 const taskTypesSchema = z.array(z.enum(MarketingTaskType)).min(1);
 const prioritiesSchema = z.array(z.int().min(1).max(5)).min(1);
@@ -115,7 +116,7 @@ async function findProductMarketingTask({
 }
 
 export const calendarRouter = {
-  getTasks: protectedProcedure
+  getTasks: publicProcedure
     .input(calendarTasksSchema)
     .handler(async ({ input }) => {
       return await prisma.productMarketingTask.findMany({
@@ -133,27 +134,12 @@ export const calendarRouter = {
         orderBy: [{ scheduledStart: "asc" }, { scheduledEnd: "asc" }],
       });
     }),
-  createTask: protectedProcedure
+  createTask: publicProcedure
     .input(createTaskSchema)
     .handler(async ({ input }) => {
-      const product = await prisma.product.findUnique({
-        where: {
-          id: input.productId,
-        },
-        select: {
-          id: true,
-        },
-      });
-
-      if (product == null) {
-        throw new ORPCError("NOT_FOUND");
-      }
-
-      return await prisma.productMarketingTask.create({
-        data: input,
-      });
+      return await createProductMarketingTask(input);
     }),
-  updateTask: protectedProcedure
+  updateTask: publicProcedure
     .input(updateTaskSchema)
     .handler(async ({ input }) => {
       await findProductMarketingTask({
@@ -175,7 +161,7 @@ export const calendarRouter = {
         },
       });
     }),
-  deleteTask: protectedProcedure
+  deleteTask: publicProcedure
     .input(taskReferenceSchema)
     .handler(async ({ input }) => {
       await findProductMarketingTask({

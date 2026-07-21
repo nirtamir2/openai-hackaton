@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/Select";
 import { getTaskListDateRange } from "@/utils/taskDateTime";
+import { getOrpcErrorMessage } from "@/utils/getOrpcErrorMessage";
 import { orpc } from "@/utils/orpc";
 
 interface Props {
@@ -49,7 +50,10 @@ export function TaskManagement({ productId }: Props) {
         await queryClient.invalidateQueries({
           queryKey: orpc.calendar.getTasks.key({ input: { productId } }),
         });
-        toast.success(`Generated ${String(result.marketingTasks.length)} tasks`);
+        toast.success(`Generated ${String(result.marketingTasks.length)} tasks for today`);
+      },
+      onError: (error) => {
+        toast.error(getOrpcErrorMessage({ error }));
       },
     }),
   );
@@ -109,12 +113,12 @@ export function TaskManagement({ productId }: Props) {
           <Button
             variant="outline"
             onClick={() => {
-              generateMutation.mutate({ productId });
+              generateMutation.mutate({ productId, forToday: true });
             }}
             disabled={generateMutation.isPending}
           >
             <Sparkles className="size-4" />
-            {generateMutation.isPending ? "Generating..." : "Generate with AI"}
+            {generateMutation.isPending ? "Generating..." : "Generate today's tasks"}
           </Button>
           <Button
             onClick={() => {
@@ -143,12 +147,12 @@ export function TaskManagement({ productId }: Props) {
               <Button
                 variant="outline"
                 onClick={() => {
-                  generateMutation.mutate({ productId });
+                  generateMutation.mutate({ productId, forToday: true });
                 }}
                 disabled={generateMutation.isPending}
               >
                 <Sparkles className="size-4" />
-                Generate with AI
+                Generate today's tasks
               </Button>
               <Button
                 onClick={() => {
