@@ -1,5 +1,5 @@
-const ideaDescriptionMaxLength = 400;
-const ideaDescriptionMaxSentences = 4;
+const ideaDescriptionMaxLength = 280;
+const ideaDescriptionMaxSentences = 2;
 
 function truncateAtWordBoundary({ text, maxLength }: { text: string; maxLength: number }) {
   if (text.length <= maxLength) {

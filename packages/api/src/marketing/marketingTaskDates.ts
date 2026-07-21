@@ -1,3 +1,7 @@
+const dayKeys = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
+
+export type MarketingTaskDayKey = (typeof dayKeys)[number];
+
 function pad(part: number) {
   return String(part).padStart(2, "0");
 }
@@ -10,8 +14,16 @@ export function getTodayLocalDateKey() {
   return getLocalDateKey({ date: new Date() });
 }
 
+export function getDayKeyFromDate({ date }: { date: Date }): MarketingTaskDayKey {
+  return dayKeys[date.getDay()] ?? "mon";
+}
+
 export function isScheduledForToday({ date }: { date: Date }) {
   return getLocalDateKey({ date }) === getTodayLocalDateKey();
+}
+
+export function isMarketingTaskTargetedForToday({ targetDate }: { targetDate: Date }) {
+  return isScheduledForToday({ date: targetDate });
 }
 
 export function getTodaySchedule() {
@@ -30,8 +42,19 @@ export function getTodaySchedule() {
     scheduledStart.setHours(scheduledStart.getHours() + 1);
   }
 
+  const endOfTargetDay = new Date(targetDate);
+  endOfTargetDay.setHours(23, 0, 0, 0);
+
+  if (scheduledStart.getTime() > endOfTargetDay.getTime()) {
+    scheduledStart.setTime(endOfTargetDay.getTime());
+  }
+
   const scheduledEnd = new Date(scheduledStart);
   scheduledEnd.setHours(scheduledEnd.getHours() + 1);
+
+  if (getLocalDateKey({ date: scheduledEnd }) !== getLocalDateKey({ date: targetDate })) {
+    scheduledEnd.setHours(23, 59, 59, 999);
+  }
 
   return { targetDate, scheduledStart, scheduledEnd };
 }

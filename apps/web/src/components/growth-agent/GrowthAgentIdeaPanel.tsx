@@ -114,7 +114,7 @@ export function GrowthAgentIdeaPanel({
 
       {!hasIdeas && showEmptyState ? (
         <p className="py-[18px] text-center text-[13.5px] text-[rgba(23,20,15,0.35)]">
-          No new video ad ideas yet. Generate tasks to get fresh Meta video ad concepts.
+          No new video ad ideas yet. Generate ideas to get fresh Meta video ad concepts.
         </p>
       ) : null}
     </div>

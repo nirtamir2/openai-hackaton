@@ -1,4 +1,4 @@
-import { marketingTaskDescriptionMaxLength } from "@app-template/ai";
+import { marketingTaskDescriptionMaxLength, marketingTaskSubtaskMaxLength } from "@app-template/ai";
 import prisma, {
   MarketingTaskContentType,
   MarketingTaskNetwork,
@@ -6,6 +6,7 @@ import prisma, {
 } from "@app-template/db";
 import { ORPCError } from "@orpc/server";
 import { z } from "zod";
+import { buildTaskPreviewTitle } from "../marketing/buildTaskPreviewTitle";
 import { createProductMarketingTask } from "../marketing/createProductMarketingTask";
 import { normalizeMarketingTaskSubtasks, serializeMarketingTaskSubtasks } from "../marketing/marketingTaskSubtasks";
 import { publicProcedure } from "../index";
@@ -18,7 +19,7 @@ const taskDescriptionSchema = z.string().trim().min(1).max(marketingTaskDescript
 
 const subtaskSchema = z.object({
   id: z.string().trim().min(1).max(100).optional(),
-  text: z.string().trim().min(1).max(500),
+  text: z.string().trim().min(1).max(marketingTaskSubtaskMaxLength),
   done: z.boolean().optional(),
 });
 
@@ -175,12 +176,15 @@ export const calendarRouter = {
       });
 
       const nextTaskType = input.taskType ?? existingTask.taskType;
+      const nextTitle =
+        input.description == null ? undefined : buildTaskPreviewTitle({ description: input.description });
 
       return await prisma.productMarketingTask.update({
         where: {
           id: input.taskId,
         },
         data: {
+          title: nextTitle,
           description: input.description,
           taskType: input.taskType,
           contentType: input.contentType,

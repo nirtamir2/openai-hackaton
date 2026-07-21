@@ -23,7 +23,9 @@ import { Skeleton } from "@/components/ui/Skeleton";
 import { getOrpcErrorMessage } from "@/utils/getOrpcErrorMessage";
 import { formatRelativeTime } from "@/utils/formatRelativeTime";
 import {
+  generateMarketingIdeasMutationKey,
   generateMarketingTasksMutationKey,
+  getGenerateMarketingIdeasMutationOptions,
   getGenerateMarketingTasksMutationOptions,
 } from "@/utils/generateMarketingTasksMutation";
 import { orpc } from "@/utils/orpc";
@@ -154,15 +156,58 @@ function getProjectDoneCount(project: GrowthAgentProject) {
   return project.todos.filter((todo) => todo.done).length;
 }
 
-function GrowthAgentFeedLoadingSkeleton() {
+function GrowthAgentFeedTaskSkeletonRow({ index }: { index: number }) {
   return (
-    <div className="flex flex-col gap-2">
-      {Array.from({ length: 4 }, (_, index) => (
-        <Skeleton
-          key={index}
-          style={{ height: "4.5rem", width: "100%", borderRadius: "0.875rem" }}
-        />
-      ))}
+    <div
+      className="flex items-center gap-3.5 rounded-[10px] border border-[rgba(23,20,15,0.1)] bg-white px-[18px] py-3.5 shadow-[0_1px_2px_rgba(23,20,15,0.03)]"
+      style={{
+        animation: "growth-task-row-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both",
+        animationDelay: `${String(80 + index * 70)}ms`,
+      }}
+    >
+      <Skeleton style={{ height: "1.25rem", width: "1.25rem", borderRadius: "9999px" }} />
+
+      <div className="min-w-0 flex-1">
+        <div className="mb-[3px] flex min-w-0 items-center gap-[7px]">
+          <Skeleton style={{ height: "0.3125rem", width: "0.3125rem", borderRadius: "9999px" }} />
+          <Skeleton style={{ height: "0.625rem", width: "3.5rem" }} />
+          <Skeleton style={{ height: "0.6875rem", width: "5.5rem" }} />
+        </div>
+        <Skeleton style={{ height: "0.9375rem", width: index % 2 === 0 ? "72%" : "58%" }} />
+      </div>
+
+      <Skeleton style={{ height: "1.625rem", width: "5.75rem", borderRadius: "0.375rem" }} />
+    </div>
+  );
+}
+
+function GrowthAgentFeedLoadingSkeleton({ variant }: { variant: "initial" | "generating" }) {
+  const rowCount = variant === "generating" ? 3 : 4;
+
+  return (
+    <div className="flex flex-col gap-3">
+      {variant === "generating" ? (
+        <div className="flex items-center gap-3.5 rounded-[12px] border border-[rgba(255,90,31,0.18)] bg-[linear-gradient(135deg,rgba(255,90,31,0.08)_0%,rgba(255,255,255,0.95)_55%)] px-[18px] py-4">
+          <div className="relative flex size-10 shrink-0 items-center justify-center">
+            <span className="absolute inset-0 animate-ping rounded-full bg-[rgba(255,90,31,0.14)]" />
+            <span className="relative flex size-8 items-center justify-center rounded-full bg-[#17140f] text-white">
+              <Sparkles className="size-4" />
+            </span>
+          </div>
+          <div className="flex min-w-0 flex-col gap-1">
+            <p className="text-[14.5px] font-medium text-[#17140f]">Generating today&apos;s tasks</p>
+            <p className="text-[12.5px] text-[rgba(23,20,15,0.55)]">
+              Building a focused set of marketing moves from your product data.
+            </p>
+          </div>
+        </div>
+      ) : null}
+
+      <div className="flex flex-col gap-2">
+        {Array.from({ length: rowCount }, (_, index) => (
+          <GrowthAgentFeedTaskSkeletonRow key={index} index={index} />
+        ))}
+      </div>
     </div>
   );
 }
@@ -193,22 +238,17 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
 
   const feedQuery = useQuery(feedQueryOptions);
 
-  const pendingTaskGenerations = useMutationState({
-    filters: {
-      mutationKey: generateMarketingTasksMutationKey,
-      status: "pending",
-    },
-  });
-  const isGeneratingTasks = pendingTaskGenerations.length > 0;
-
   const invalidateFeed = async () => {
     await queryClient.invalidateQueries({
       queryKey: feedQueryKey,
     });
   };
 
-  const generateMutation = useMutation(
+  const generateTasksMutation = useMutation(
     getGenerateMarketingTasksMutationOptions({
+      onMutate: () => {
+        setSelectedDay(growthAgentToday);
+      },
       onSuccess: async (result) => {
         setSelectedDay(growthAgentToday);
         queryClient.setQueryData(feedQueryKey, (old) => {
@@ -222,13 +262,9 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
           };
         });
         await invalidateFeed();
-        const ideaCount = result.ideas.length;
         const taskCount = result.marketingTasks.length;
-        const ideaLabel = ideaCount === 1 ? "idea" : "ideas";
         const taskLabel = taskCount === 1 ? "task" : "tasks";
-        toast.success(
-          `Generated ${String(taskCount)} ${taskLabel} and ${String(ideaCount)} new ${ideaLabel}`,
-        );
+        toast.success(`Generated ${String(taskCount)} ${taskLabel}`);
       },
       onError: (error) => {
         toast.error(getOrpcErrorMessage({ error }));
@@ -236,7 +272,38 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
     }),
   );
 
-  const isFeedBusy = isGeneratingTasks;
+  const generateIdeasMutation = useMutation(
+    getGenerateMarketingIdeasMutationOptions({
+      onSuccess: async (result) => {
+        await invalidateFeed();
+        const ideaCount = result.ideas.length;
+        const ideaLabel = ideaCount === 1 ? "idea" : "ideas";
+        toast.success(`Generated ${String(ideaCount)} new ${ideaLabel}`);
+      },
+      onError: (error) => {
+        toast.error(getOrpcErrorMessage({ error }));
+      },
+    }),
+  );
+
+  const pendingTaskGenerations = useMutationState({
+    filters: {
+      mutationKey: generateMarketingTasksMutationKey,
+      status: "pending",
+    },
+  });
+  const pendingIdeaGenerations = useMutationState({
+    filters: {
+      mutationKey: generateMarketingIdeasMutationKey,
+      status: "pending",
+    },
+  });
+  const isGeneratingTasks =
+    generateTasksMutation.isPending || pendingTaskGenerations.length > 0;
+  const isGeneratingIdeas =
+    generateIdeasMutation.isPending || pendingIdeaGenerations.length > 0;
+
+  const isFeedBusy = isGeneratingTasks || isGeneratingIdeas;
 
   const setItemCompletedMutation = useMutation(
     orpc.feed.setItemCompleted.mutationOptions({
@@ -421,23 +488,9 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
       <div className="mb-5 flex flex-wrap items-baseline justify-between gap-3">
         <h1 className="text-[26px] font-semibold tracking-[-0.3px]">This week</h1>
         <div className="flex flex-wrap items-center gap-3">
-          {feedQuery.isFetching && !isInitialLoad ? (
+          {feedQuery.isFetching && !isInitialLoad && !isGeneratingTasks ? (
             <span className="font-mono text-[11.5px] text-[rgba(23,20,15,0.45)]">Updating feed...</span>
           ) : null}
-          {isGeneratingTasks ? (
-            <span className="font-mono text-[11.5px] text-[rgba(23,20,15,0.45)]">Generating tasks...</span>
-          ) : null}
-          <SignalButton
-            variant="secondary"
-            size="sm"
-            disabled={isFeedBusy || isInitialLoad}
-            onClick={() => {
-              generateMutation.mutate({ productId, forToday: true, taskCount: 3 });
-            }}
-          >
-            <Sparkles className="size-[13px]" />
-            {isGeneratingTasks ? "Generating..." : "Generate today's tasks"}
-          </SignalButton>
           {lastGeneratedLabel == null ? null : (
             <div className="flex items-center gap-2 font-mono text-[11.5px] text-[rgba(23,20,15,0.45)]">
               <span className="inline-block size-1.5 rounded-full bg-[#2f6f4e]" />
@@ -469,7 +522,7 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
               {selectedDayLabel}
             </p>
           </div>
-          <GrowthAgentFeedLoadingSkeleton />
+          <GrowthAgentFeedLoadingSkeleton variant="initial" />
         </div>
       ) : null}
 
@@ -508,24 +561,42 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
         <p className="text-[12.5px] font-semibold tracking-[0.3px] text-[rgba(23,20,15,0.45)]">
           {selectedDayLabel}
         </p>
-        {visibleItems.length > 0 ? (
+        <div className="flex flex-wrap items-center gap-2">
           <SignalButton
-            variant="tertiary"
+            variant="secondary"
             size="sm"
-            disabled={isFeedBusy}
+            disabled={isFeedBusy || isInitialLoad}
             onClick={() => {
-              setRemoveDayTasksDialogOpen(true);
+              generateTasksMutation.mutate({
+                productId,
+                forToday: true,
+                taskCount: 3,
+                scope: "tasks",
+              });
             }}
           >
-            <Trash2 className="size-[13px]" />
-            Remove all tasks
+            <Sparkles className="size-[13px]" />
+            {isGeneratingTasks ? "Generating..." : "Generate today's tasks"}
           </SignalButton>
-        ) : null}
+          {visibleItems.length > 0 ? (
+            <SignalButton
+              variant="tertiary"
+              size="sm"
+              disabled={isFeedBusy}
+              onClick={() => {
+                setRemoveDayTasksDialogOpen(true);
+              }}
+            >
+              <Trash2 className="size-[13px]" />
+              Remove all tasks
+            </SignalButton>
+          ) : null}
+        </div>
       </div>
 
       <div className="mb-9 flex flex-col gap-2">
         {isGeneratingTasks ? (
-          <GrowthAgentFeedLoadingSkeleton />
+          <GrowthAgentFeedLoadingSkeleton variant="generating" />
         ) : null}
         {!isGeneratingTasks
           ? visibleItems.map((item, index) => (
@@ -545,17 +616,41 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
           : null}
         {!isGeneratingTasks && visibleItems.length === 0 ? (
           <p className="py-[30px] text-center text-[13.5px] text-[rgba(23,20,15,0.35)]">
-            Nothing scheduled this day.
+            Nothing scheduled this day. Generate today&apos;s tasks to get started.
           </p>
         ) : null}
       </div>
 
-      <p className="mb-2.5 text-[12.5px] font-semibold tracking-[0.3px] text-[rgba(23,20,15,0.45)]">
-        IDEAS
-      </p>
+      <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2">
+        <p className="text-[12.5px] font-semibold tracking-[0.3px] text-[rgba(23,20,15,0.45)]">
+          IDEAS
+        </p>
+        <SignalButton
+          variant="secondary"
+          size="sm"
+          disabled={isFeedBusy || isInitialLoad}
+          onClick={() => {
+            generateIdeasMutation.mutate({
+              productId,
+              forToday: true,
+              taskCount: 3,
+              scope: "ideas",
+            });
+          }}
+        >
+          <Sparkles className="size-[13px]" />
+          {isGeneratingIdeas ? "Generating..." : "Generate ideas"}
+        </SignalButton>
+      </div>
 
       <div className="mb-9 flex flex-col gap-2">
-        <GrowthAgentIdeaPanel
+        {isGeneratingIdeas ? (
+          <p className="py-[18px] text-center text-[13.5px] text-[rgba(23,20,15,0.45)]">
+            Generating video ad ideas...
+          </p>
+        ) : null}
+        {!isGeneratingIdeas ? (
+          <GrowthAgentIdeaPanel
           pendingIdeas={pendingIdeas}
           postponedIdeas={postponedIdeas}
           showEmptyState={!hasIdeas}
@@ -575,8 +670,10 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
             updateIdeaStatus({ entryId, status: "pending" });
           }}
         />
+        ) : null}
 
-        {activeIdeas.map((project) => (
+        {!isGeneratingIdeas
+          ? activeIdeas.map((project) => (
           <GrowthAgentProjectRow
             key={project.id}
             project={project}
@@ -588,7 +685,8 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
               });
             }}
           />
-        ))}
+        ))
+          : null}
       </div>
         </>
       ) : null}

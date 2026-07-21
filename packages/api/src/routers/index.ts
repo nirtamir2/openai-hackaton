@@ -45,10 +45,15 @@ export const appRouter = {
         trendId: z.uuid().optional(),
         taskCount: z.union([z.literal(1), z.literal(3)]).default(3),
         forToday: z.boolean().default(true),
+        scope: z.enum(["all", "tasks", "ideas"]).default("all"),
       }),
     )
     .handler(async ({ input }) => {
-      if (input.forToday) {
+      try {
+      const shouldGenerateTasks = input.scope === "all" || input.scope === "tasks";
+      const shouldGenerateIdeas = input.scope === "all" || input.scope === "ideas";
+
+      if (input.forToday && shouldGenerateTasks) {
         await clearTodayMarketingTasks({ productId: input.productId });
       }
 
@@ -90,16 +95,20 @@ export const appRouter = {
       };
 
       const [generatedTasks, ideaTasks] = await Promise.all([
-        generateMarketingTasks({
-          context: generationContext,
-          taskCount: input.taskCount,
-          forToday: input.forToday,
-        }),
-        generateMarketingTasks({
-          context: generationContext,
-          taskCount: input.taskCount,
-          forIdea: true,
-        }),
+        shouldGenerateTasks
+          ? generateMarketingTasks({
+              context: generationContext,
+              taskCount: input.taskCount,
+              forToday: input.forToday,
+            })
+          : Promise.resolve([]),
+        shouldGenerateIdeas
+          ? generateMarketingTasks({
+              context: generationContext,
+              taskCount: input.taskCount,
+              forIdea: true,
+            })
+          : Promise.resolve([]),
       ]);
 
       const shortTasks = generatedTasks.filter(
@@ -107,70 +116,78 @@ export const appRouter = {
       );
       const longTasks = ideaTasks.filter((task) => isVideoIdeaTask(task));
 
-      if (shortTasks.length !== input.taskCount) {
+      if (shouldGenerateTasks && shortTasks.length !== input.taskCount) {
         throw new ORPCError("INTERNAL_SERVER_ERROR", {
           message: `Expected ${String(input.taskCount)} tasks but generated ${String(shortTasks.length)}.`,
         });
       }
 
-      if (longTasks.length !== input.taskCount) {
+      if (shouldGenerateIdeas && longTasks.length !== input.taskCount) {
         throw new ORPCError("INTERNAL_SERVER_ERROR", {
           message: `Expected ${String(input.taskCount)} ideas but generated ${String(longTasks.length)}.`,
         });
       }
 
-      const marketingTasks = await Promise.all(
-        shortTasks.map(async (task) =>
-          createProductMarketingTask({
-            productId: marketSentiment.product.id,
-            description: task.description,
-            taskType: task.taskType,
-            contentType: task.contentType,
-            network: task.network,
-            subtasks: task.subtasks,
-            priority: task.priority,
-            targetDate: task.targetDate,
-            scheduledStart: task.scheduledStart,
-            scheduledEnd: task.scheduledEnd,
-            trendId: input.trendId ?? null,
-          }),
-        ),
-      );
+      const marketingTasks = shouldGenerateTasks
+        ? await Promise.all(
+            shortTasks.map(async (task) =>
+              createProductMarketingTask({
+                productId: marketSentiment.product.id,
+                description: task.description,
+                taskType: task.taskType,
+                contentType: task.contentType,
+                network: task.network,
+                subtasks: task.subtasks,
+                priority: task.priority,
+                targetDate: task.targetDate,
+                scheduledStart: task.scheduledStart,
+                scheduledEnd: task.scheduledEnd,
+                trendId: input.trendId ?? null,
+              }),
+            ),
+          )
+        : [];
 
-      await Promise.all(
-        marketingTasks.map(async (task) => syncMarketingTaskToGrowthFeed(task, generationContext)),
-      );
+      if (shouldGenerateTasks) {
+        await Promise.all(
+          marketingTasks.map(async (task) => syncMarketingTaskToGrowthFeed(task, null)),
+        );
+      }
 
-      const ideas = await Promise.all(
-        longTasks.map(async (task) =>
-          createGrowthFeedIdea({
-            productId: marketSentiment.product.id,
-            task: {
-              description: task.description,
-              contentType: task.contentType,
-              network: task.network,
-              videoHook: task.videoHook ?? "",
-              subtasks: task.subtasks,
-              priority: task.priority,
-              targetDate: task.targetDate,
-              scheduledStart: task.scheduledStart,
-              scheduledEnd: task.scheduledEnd,
-              trendId: input.trendId ?? null,
-            },
-          }),
-        ),
-      );
+      const ideas = shouldGenerateIdeas
+        ? await Promise.all(
+            longTasks.map(async (task) =>
+              createGrowthFeedIdea({
+                productId: marketSentiment.product.id,
+                task: {
+                  description: task.description,
+                  contentType: task.contentType,
+                  network: task.network,
+                  videoHook: task.videoHook ?? "",
+                  subtasks: task.subtasks,
+                  priority: task.priority,
+                  targetDate: task.targetDate,
+                  scheduledStart: task.scheduledStart,
+                  scheduledEnd: task.scheduledEnd,
+                  trendId: input.trendId ?? null,
+                },
+              }),
+            ),
+          )
+        : [];
 
       const lastGeneratedAt = new Date();
 
-      await prisma.product.update({
-        where: {
-          id: marketSentiment.product.id,
-        },
-        data: {
-          marketingTasksGeneratedAt: lastGeneratedAt,
-        },
-      });
+      if (shouldGenerateTasks) {
+        await prisma.product.update({
+          where: {
+            id: marketSentiment.product.id,
+          },
+          data: {
+            marketingTasksGeneratedAt: lastGeneratedAt,
+          },
+        });
+      }
 
       return {
         productId: marketSentiment.product.id,
@@ -182,6 +199,12 @@ export const appRouter = {
         ideas,
         lastGeneratedAt: lastGeneratedAt.toISOString(),
       };
+      } catch (error) {
+        const message =
+          error instanceof Error ? error.message : "Marketing task generation failed.";
+
+        throw new ORPCError("INTERNAL_SERVER_ERROR", { message });
+      }
     }),
 };
 

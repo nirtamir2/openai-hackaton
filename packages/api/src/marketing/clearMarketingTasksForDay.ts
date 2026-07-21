@@ -3,13 +3,15 @@ import {
   getMarketingTaskExternalId,
   parseMarketingTaskIdFromExternalId,
 } from "../feed/marketingTaskFeedIds";
+import {
+  getDayKeyFromDate,
+  type MarketingTaskDayKey,
+} from "./marketingTaskDates";
 
-const dayKeys = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
-
-export type MarketingTaskDayKey = (typeof dayKeys)[number];
+export type { MarketingTaskDayKey };
 
 export function getMarketingTaskDayKeyFromDate({ date }: { date: Date }): MarketingTaskDayKey {
-  return dayKeys[date.getDay()] ?? "mon";
+  return getDayKeyFromDate({ date });
 }
 
 export async function clearMarketingTasksForDay({

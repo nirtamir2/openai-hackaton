@@ -20,7 +20,7 @@ import { TargetMarketStep } from "@/components/onboarding/steps/TargetMarketStep
 import { WebsiteInputStep } from "@/components/onboarding/steps/WebsiteInputStep";
 import { getOrpcErrorMessage } from "@/utils/getOrpcErrorMessage";
 import { getGenerateMarketingTasksMutationOptions } from "@/utils/generateMarketingTasksMutation";
-import { orpc } from "@/utils/orpc";
+import { client, orpc } from "@/utils/orpc";
 
 export function OnboardingWizard() {
   const navigate = useNavigate();
@@ -29,13 +29,34 @@ export function OnboardingWizard() {
   const [state, setState] = useState<OnboardingState>(createInitialOnboardingState);
   const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
   const [productIdForFeed, setProductIdForFeed] = useState<string | null>(null);
+  const [tasksReady, setTasksReady] = useState(false);
 
   const generateTasksMutation = useMutation(
     getGenerateMarketingTasksMutationOptions({
-      onSuccess: async (_result, input) => {
+      onSuccess: async (result, input) => {
         await queryClient.invalidateQueries({
           queryKey: orpc.feed.getFeed.key({ input: { productId: input.productId } }),
         });
+
+        if (input.scope === "tasks" || input.scope === "all") {
+          setTasksReady(true);
+
+          void client
+            .generateMarketingTasks({
+              productId: input.productId,
+              forToday: true,
+              taskCount: input.taskCount,
+              scope: "ideas",
+            })
+            .then(async () => {
+              await queryClient.invalidateQueries({
+                queryKey: orpc.feed.getFeed.key({ input: { productId: input.productId } }),
+              });
+            })
+            .catch((error: unknown) => {
+              toast.error(getOrpcErrorMessage({ error }));
+            });
+        }
       },
       onError: (error) => {
         toast.error(getOrpcErrorMessage({ error }));
@@ -54,6 +75,7 @@ export function OnboardingWizard() {
           productId: result.productId,
           forToday: true,
           taskCount: 3,
+          scope: "tasks",
         });
       },
       onError: (error) => {
@@ -104,7 +126,7 @@ export function OnboardingWizard() {
       return (
         <DailyPlanGenerationProgress
           state={state}
-          canNavigate={productIdForFeed != null}
+          canNavigate={productIdForFeed != null && tasksReady}
           onComplete={handleNavigateToFeed}
         />
       );

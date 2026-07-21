@@ -136,6 +136,7 @@ export async function approveGrowthFeedIdea({ productId, entryId }: Props) {
 
   const marketingTask = await createProductMarketingTask({
     productId,
+    title: taskDraft.videoHook,
     description: taskDraft.description,
     taskType: MarketingTaskType.LONG,
     contentType: taskDraft.contentType,

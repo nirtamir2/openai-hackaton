@@ -13,10 +13,11 @@ import type { MarketingTaskGenerationContext } from "@app-template/ai";
 import { buildTaskPreviewTitle } from "../marketing/buildTaskPreviewTitle";
 import { enrichMarketingTaskFeedPayload } from "./enrichMarketingTaskFeedPayload";
 import { getMarketingTaskExternalId } from "./marketingTaskFeedIds";
-import { isScheduledForToday } from "../marketing/marketingTaskDates";
+import {
+  getDayKeyFromDate,
+  isMarketingTaskTargetedForToday,
+} from "../marketing/marketingTaskDates";
 import { getProductSentimentContext } from "../sentiment/getProductSentimentContext";
-
-const dayKeys = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value != null && !Array.isArray(value);
@@ -32,12 +33,9 @@ function readStoredVideoHook(payload: unknown) {
   return typeof videoHook === "string" && videoHook.trim().length > 0 ? videoHook.trim() : null;
 }
 
-function getDayKeyFromDate(date: Date) {
-  return dayKeys[date.getDay()] ?? "mon";
-}
-
 function buildShortTaskFeedPayload(task: ProductMarketingTaskModel) {
   const description = task.description.trim();
+  const title = task.title.trim().length > 0 ? task.title.trim() : buildTaskPreviewTitle({ description });
   const tag = getMarketingTaskTag({
     network: task.network,
     contentType: task.contentType,
@@ -54,7 +52,7 @@ function buildShortTaskFeedPayload(task: ProductMarketingTaskModel) {
     tag,
     color,
     colorBg,
-    title: buildTaskPreviewTitle({ description }),
+    title,
     description,
     meta: `Priority ${String(task.priority)}`,
     marketingTaskId: task.id,
@@ -137,14 +135,14 @@ export async function syncMarketingTaskToGrowthFeed(
       productId: task.productId,
       externalId,
       kind: isLongTask ? GrowthFeedEntryKind.PROJECT : GrowthFeedEntryKind.FEED_ITEM,
-      dayKey: isLongTask ? null : getDayKeyFromDate(task.scheduledStart),
+      dayKey: isLongTask ? null : getDayKeyFromDate({ date: task.targetDate }),
       sortOrder: 1_000 + task.priority,
       completed: false,
       payload: payload as never,
     },
     update: {
       kind: isLongTask ? GrowthFeedEntryKind.PROJECT : GrowthFeedEntryKind.FEED_ITEM,
-      dayKey: isLongTask ? null : getDayKeyFromDate(task.scheduledStart),
+      dayKey: isLongTask ? null : getDayKeyFromDate({ date: task.targetDate }),
       sortOrder: 1_000 + task.priority,
       payload: payload as never,
     },
@@ -164,7 +162,7 @@ export async function syncMarketingTasksToGrowthFeed({
   });
 
   const todayTasks = tasks.filter((task) =>
-    isScheduledForToday({ date: task.scheduledStart }),
+    isMarketingTaskTargetedForToday({ targetDate: task.targetDate }),
   );
 
   const todayExternalIds = new Set(

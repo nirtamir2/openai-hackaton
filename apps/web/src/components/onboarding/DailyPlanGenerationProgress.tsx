@@ -15,8 +15,8 @@ interface Props {
   onComplete: () => void;
 }
 
-const stepAdvanceMs = 1_900;
-const completionDelayMs = 900;
+const stepAdvanceMs = 650;
+const completionDelayMs = 300;
 
 function getTodayLabel() {
   return new Intl.DateTimeFormat("en-US", {
@@ -40,9 +40,7 @@ function buildPlanSteps(state: OnboardingState) {
   return [
     "Reading your growth profile",
     `Prioritizing ${channelLabel}`,
-    "Aligning with your target audiences",
     `Calibrating to ${capacityLabel}`,
-    "Drafting today's highest-impact moves",
     "Preparing your feed",
   ] as const;
 }
@@ -116,7 +114,7 @@ export function DailyPlanGenerationProgress({ state, canNavigate, onComplete }: 
 
         return currentCount + 1;
       });
-    }, 2_400);
+    }, 850);
 
     return () => {
       window.clearInterval(previewIntervalId);
@@ -144,7 +142,7 @@ export function DailyPlanGenerationProgress({ state, canNavigate, onComplete }: 
 
     const navigateTimeoutId = window.setTimeout(() => {
       onComplete();
-    }, 700);
+    }, 250);
 
     return () => {
       window.clearTimeout(navigateTimeoutId);

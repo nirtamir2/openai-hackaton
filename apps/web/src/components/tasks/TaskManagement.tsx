@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/Select";
 import { getTaskListDateRange } from "@/utils/taskDateTime";
 import { getOrpcErrorMessage } from "@/utils/getOrpcErrorMessage";
-import { getGenerateMarketingTasksMutationOptions } from "@/utils/generateMarketingTasksMutation";
+import { getGenerateMarketingIdeasMutationOptions, getGenerateMarketingTasksMutationOptions } from "@/utils/generateMarketingTasksMutation";
 import { orpc } from "@/utils/orpc";
 
 interface Props {
@@ -39,6 +39,7 @@ export function TaskManagement({ productId }: Props) {
   const [priorityFilter, setPriorityFilter] = useState<string>("all");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [isGeneratingTasks, setIsGeneratingTasks] = useState(false);
+  const [isGeneratingIdeas, setIsGeneratingIdeas] = useState(false);
 
   const tasksQuery = useQuery(
     orpc.calendar.getTasks.queryOptions({
@@ -54,7 +55,7 @@ export function TaskManagement({ productId }: Props) {
     }),
   );
 
-  const generateMutation = useMutation(
+  const generateTasksMutation = useMutation(
     getGenerateMarketingTasksMutationOptions({
       onMutate: () => {
         setIsGeneratingTasks(true);
@@ -66,13 +67,9 @@ export function TaskManagement({ productId }: Props) {
         await queryClient.invalidateQueries({
           queryKey: orpc.feed.getFeed.key({ input: { productId } }),
         });
-        const ideaCount = result.ideas.length;
         const taskCount = result.marketingTasks.length;
-        const ideaLabel = ideaCount === 1 ? "idea" : "ideas";
         const taskLabel = taskCount === 1 ? "task" : "tasks";
-        toast.success(
-          `Generated ${String(taskCount)} ${taskLabel} and ${String(ideaCount)} new ${ideaLabel}`,
-        );
+        toast.success(`Generated ${String(taskCount)} ${taskLabel}`);
       },
       onError: (error) => {
         toast.error(getOrpcErrorMessage({ error }));
@@ -83,8 +80,31 @@ export function TaskManagement({ productId }: Props) {
     }),
   );
 
+  const generateIdeasMutation = useMutation(
+    getGenerateMarketingIdeasMutationOptions({
+      onMutate: () => {
+        setIsGeneratingIdeas(true);
+      },
+      onSuccess: async (result) => {
+        await queryClient.invalidateQueries({
+          queryKey: orpc.feed.getFeed.key({ input: { productId } }),
+        });
+        const ideaCount = result.ideas.length;
+        const ideaLabel = ideaCount === 1 ? "idea" : "ideas";
+        toast.success(`Generated ${String(ideaCount)} new ${ideaLabel}`);
+      },
+      onError: (error) => {
+        toast.error(getOrpcErrorMessage({ error }));
+      },
+      onSettled: () => {
+        setIsGeneratingIdeas(false);
+      },
+    }),
+  );
+
   const tasks = tasksQuery.data ?? [];
   const hasTasks = tasks.length > 0;
+  const isGenerating = isGeneratingTasks || isGeneratingIdeas;
   const showTaskListLoading = tasksQuery.isLoading || isGeneratingTasks;
 
   return (
@@ -183,12 +203,32 @@ export function TaskManagement({ productId }: Props) {
           <Button
             variant="outline"
             onClick={() => {
-              generateMutation.mutate({ productId, forToday: true, taskCount: 3 });
+              generateTasksMutation.mutate({
+                productId,
+                forToday: true,
+                taskCount: 3,
+                scope: "tasks",
+              });
             }}
-            disabled={generateMutation.isPending}
+            disabled={isGenerating}
           >
             <Sparkles className="size-4" />
-            {generateMutation.isPending ? "Generating..." : "Generate today's tasks"}
+            {isGeneratingTasks ? "Generating..." : "Generate today's tasks"}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => {
+              generateIdeasMutation.mutate({
+                productId,
+                forToday: true,
+                taskCount: 3,
+                scope: "ideas",
+              });
+            }}
+            disabled={isGenerating}
+          >
+            <Sparkles className="size-4" />
+            {isGeneratingIdeas ? "Generating..." : "Generate ideas"}
           </Button>
           <Button
             onClick={() => {
@@ -219,12 +259,32 @@ export function TaskManagement({ productId }: Props) {
               <Button
                 variant="outline"
                 onClick={() => {
-                  generateMutation.mutate({ productId, forToday: true, taskCount: 3 });
+                  generateTasksMutation.mutate({
+                    productId,
+                    forToday: true,
+                    taskCount: 3,
+                    scope: "tasks",
+                  });
                 }}
-                disabled={generateMutation.isPending}
+                disabled={isGenerating}
               >
                 <Sparkles className="size-4" />
                 Generate today's tasks
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  generateIdeasMutation.mutate({
+                    productId,
+                    forToday: true,
+                    taskCount: 3,
+                    scope: "ideas",
+                  });
+                }}
+                disabled={isGenerating}
+              >
+                <Sparkles className="size-4" />
+                Generate ideas
               </Button>
               <Button
                 onClick={() => {
