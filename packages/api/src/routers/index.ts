@@ -5,6 +5,7 @@ import { generateMarketingTasks } from "@app-template/ai";
 import prisma from "@app-template/db";
 import { publicProcedure } from "../index";
 import { syncMarketingTaskToGrowthFeed } from "../feed/syncMarketingTasksToGrowthFeed";
+import { clearTodayMarketingTasks } from "../marketing/clearTodayMarketingTasks";
 import { createProductMarketingTask } from "../marketing/createProductMarketingTask";
 import { getProductSentimentContext } from "../sentiment/getProductSentimentContext";
 import { calendarRouter } from "./calendar";
@@ -32,9 +33,14 @@ export const appRouter = {
         productId: z.uuid(),
         trendId: z.uuid().optional(),
         taskCount: z.union([z.literal(1), z.literal(3)]).default(3),
+        forToday: z.boolean().default(true),
       }),
     )
     .handler(async ({ input }) => {
+      if (input.forToday) {
+        await clearTodayMarketingTasks({ productId: input.productId });
+      }
+
       const marketSentiment = await getProductSentimentContext({
         productId: input.productId,
       });
@@ -72,6 +78,7 @@ export const appRouter = {
                 },
         },
         taskCount: input.taskCount,
+        forToday: input.forToday,
       });
       const marketingTasks = await Promise.all(
         generatedTasks.map(async (task) =>

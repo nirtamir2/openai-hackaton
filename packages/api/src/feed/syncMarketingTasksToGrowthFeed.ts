@@ -1,11 +1,9 @@
 import prisma, { GrowthFeedEntryKind, MarketingTaskType } from "@app-template/db";
 import type { ProductMarketingTaskModel } from "@app-template/db";
+import { getMarketingTaskExternalId } from "./marketingTaskFeedIds";
+import { isScheduledForToday } from "../marketing/marketingTaskDates";
 
 const dayKeys = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"] as const;
-
-function getMarketingTaskExternalId({ taskId }: { taskId: string }) {
-  return `marketing-task-${taskId}`;
-}
 
 function getDayKeyFromDate(date: Date) {
   return dayKeys[date.getDay()] ?? "mon";
@@ -70,7 +68,40 @@ export async function syncMarketingTasksToGrowthFeed({ productId }: { productId:
     orderBy: [{ scheduledStart: "asc" }],
   });
 
-  if (tasks.length === 0) {
+  const todayTasks = tasks.filter((task) =>
+    isScheduledForToday({ date: task.scheduledStart }),
+  );
+
+  const todayExternalIds = new Set(
+    todayTasks.map((task) => getMarketingTaskExternalId({ taskId: task.id })),
+  );
+
+  const marketingFeedEntries = await prisma.productGrowthFeedEntry.findMany({
+    where: {
+      productId,
+      externalId: {
+        startsWith: "marketing-task-",
+      },
+    },
+    select: {
+      externalId: true,
+    },
+  });
+
+  const staleExternalIds = marketingFeedEntries
+    .map((entry) => entry.externalId)
+    .filter((externalId) => !todayExternalIds.has(externalId));
+
+  if (staleExternalIds.length > 0) {
+    await prisma.productGrowthFeedEntry.deleteMany({
+      where: {
+        productId,
+        externalId: { in: staleExternalIds },
+      },
+    });
+  }
+
+  if (todayTasks.length === 0) {
     return;
   }
 
@@ -87,7 +118,7 @@ export async function syncMarketingTasksToGrowthFeed({ productId }: { productId:
   });
 
   const existingExternalIds = new Set(existingEntries.map((entry) => entry.externalId));
-  const tasksToSync = tasks.filter(
+  const tasksToSync = todayTasks.filter(
     (task) => !existingExternalIds.has(getMarketingTaskExternalId({ taskId: task.id })),
   );
 

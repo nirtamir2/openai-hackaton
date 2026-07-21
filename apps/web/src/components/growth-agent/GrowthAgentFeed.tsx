@@ -1,7 +1,8 @@
 import { GrowthIdeaStatus } from "@app-template/db/enums";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Check, Clock } from "lucide-react";
+import { Check, Clock, Sparkles } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import { GrowthAgentDayPicker } from "@/components/growth-agent/GrowthAgentDayPicker";
 import { GrowthAgentFeedItemRow } from "@/components/growth-agent/GrowthAgentFeedItemRow";
 import { GrowthAgentProjectRow } from "@/components/growth-agent/GrowthAgentProjectRow";
@@ -16,6 +17,7 @@ import type {
 import { getGrowthAgentDays, getGrowthAgentToday } from "@/components/growth-agent/growthAgentWeek";
 import { Loader } from "@/components/layout/Loader";
 import { SignalButton } from "@/components/home/SignalButton";
+import { getOrpcErrorMessage } from "@/utils/getOrpcErrorMessage";
 import { orpc } from "@/utils/orpc";
 
 type IdeaStatus = "pending" | "approved" | "postponed" | "cancelled";
@@ -83,6 +85,21 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
       queryKey: orpc.feed.getFeed.key({ input: { productId } }),
     });
   };
+
+  const generateMutation = useMutation(
+    orpc.generateMarketingTasks.mutationOptions({
+      onSuccess: async (result) => {
+        setSelectedDay(growthAgentToday);
+        await invalidateFeed();
+        toast.success(`Generated ${String(result.marketingTasks.length)} tasks for today`);
+      },
+      onError: (error) => {
+        toast.error(getOrpcErrorMessage({ error }));
+      },
+    }),
+  );
+
+  const isFeedBusy = feedQuery.isFetching || generateMutation.isPending;
 
   const setItemCompletedMutation = useMutation(
     orpc.feed.setItemCompleted.mutationOptions({
@@ -227,13 +244,36 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
 
   return (
     <div className="flex flex-col">
-      <div className="mb-5 flex items-baseline justify-between">
+      <div className="mb-5 flex flex-wrap items-baseline justify-between gap-3">
         <h1 className="text-[26px] font-semibold tracking-[-0.3px]">This week</h1>
-        <div className="flex items-center gap-2 font-mono text-[11.5px] text-[rgba(23,20,15,0.45)]">
-          <span className="inline-block size-1.5 rounded-full bg-[#2f6f4e]" />
-          last scanned 6 min ago
+        <div className="flex flex-wrap items-center gap-3">
+          {feedQuery.isFetching && !feedQuery.isLoading ? (
+            <span className="font-mono text-[11.5px] text-[rgba(23,20,15,0.45)]">Updating feed...</span>
+          ) : null}
+          {generateMutation.isPending ? (
+            <span className="font-mono text-[11.5px] text-[rgba(23,20,15,0.45)]">Generating tasks...</span>
+          ) : null}
+          <SignalButton
+            variant="secondary"
+            size="sm"
+            disabled={isFeedBusy}
+            onClick={() => {
+              generateMutation.mutate({ productId, forToday: true, taskCount: 3 });
+            }}
+          >
+            <Sparkles className="size-[13px]" />
+            {generateMutation.isPending ? "Generating..." : "Generate today's tasks"}
+          </SignalButton>
+          <div className="flex items-center gap-2 font-mono text-[11.5px] text-[rgba(23,20,15,0.45)]">
+            <span className="inline-block size-1.5 rounded-full bg-[#2f6f4e]" />
+            last scanned 6 min ago
+          </div>
         </div>
       </div>
+
+      <div
+        className={isFeedBusy && !feedQuery.isLoading ? "pointer-events-none opacity-60" : undefined}
+      >
 
       {liveItem != null ? (
         <button
@@ -453,6 +493,7 @@ export function GrowthAgentFeed({ productId, onOpenCountChange }: Props) {
             }}
           />
         ))}
+      </div>
       </div>
 
       <GrowthAgentTaskDrawer

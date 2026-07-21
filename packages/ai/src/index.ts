@@ -56,6 +56,7 @@ export interface GeneratedMarketingTask {
 interface GenerateMarketingTasksProps {
   context: MarketingTaskGenerationContext;
   taskCount: 1 | 3;
+  forToday?: boolean;
 }
 
 const marketingTaskSchema = z.object({
@@ -117,6 +118,37 @@ function getToday() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function pad(part: number) {
+  return String(part).padStart(2, "0");
+}
+
+function getLocalTodayString() {
+  const now = new Date();
+  return `${String(now.getFullYear())}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
+function getTodaySchedule() {
+  const now = new Date();
+  const targetDate = new Date(now);
+  targetDate.setHours(0, 0, 0, 0);
+
+  const scheduledStart = new Date(now);
+  scheduledStart.setHours(9, 0, 0, 0);
+
+  if (scheduledStart.getTime() <= now.getTime()) {
+    scheduledStart.setTime(now.getTime());
+    scheduledStart.setMinutes(0, 0, 0);
+    scheduledStart.setSeconds(0, 0);
+    scheduledStart.setMilliseconds(0);
+    scheduledStart.setHours(scheduledStart.getHours() + 1);
+  }
+
+  const scheduledEnd = new Date(scheduledStart);
+  scheduledEnd.setHours(scheduledEnd.getHours() + 1);
+
+  return { targetDate, scheduledStart, scheduledEnd };
+}
+
 function getLatestTargetDate({ today }: { today: string }) {
   const latestTargetDate = new Date(`${today}T23:59:59.999Z`);
   latestTargetDate.setUTCDate(latestTargetDate.getUTCDate() + 90);
@@ -137,6 +169,7 @@ function buildMarketingTaskSystemPrompt({
   context,
   taskCount,
   today,
+  forToday = false,
 }: GenerateMarketingTasksProps & { today: string }) {
   const trendInstructions =
     context.trend == null
@@ -156,7 +189,9 @@ function buildMarketingTaskSystemPrompt({
     "Do not duplicate or restate an active marketing task from the context.",
     "Use taskType SHORT for a focused task that can be completed within 14 days. Use LONG for a multi-step initiative that requires more than 14 days.",
     "Set priority as an integer from 1 to 5, where 1 is most urgent and 5 is least urgent.",
-    `Today's date is ${today}. Each targetDate must be a future calendar date in YYYY-MM-DD format, no more than 90 days from today.`,
+    forToday
+      ? `Today's date is ${today}. Each targetDate must be exactly ${today}. Every task must be actionable today.`
+      : `Today's date is ${today}. Each targetDate must be a future calendar date in YYYY-MM-DD format, no more than 90 days from today.`,
     "Return only the structured task plan requested by the output schema.",
     "",
     "Task-generation context:",
@@ -168,10 +203,11 @@ async function generateMarketingTasksWithStructuredOutput({
   context,
   taskCount,
   today,
+  forToday = false,
 }: GenerateMarketingTasksProps & { today: string }) {
   return await chat({
     adapter: createOpenaiChat("gpt-5-mini", env.OPENAI_API_KEY),
-    systemPrompts: [buildMarketingTaskSystemPrompt({ context, taskCount, today })],
+    systemPrompts: [buildMarketingTaskSystemPrompt({ context, taskCount, today, forToday })],
     messages: [
       {
         role: "user",
@@ -189,11 +225,12 @@ async function generateMarketingTasksWithJsonFallback({
   context,
   taskCount,
   today,
+  forToday = false,
 }: GenerateMarketingTasksProps & { today: string }) {
   const responseText = await chat({
     adapter: createOpenaiChat("gpt-5-mini", env.OPENAI_API_KEY),
     systemPrompts: [
-      buildMarketingTaskSystemPrompt({ context, taskCount, today }),
+      buildMarketingTaskSystemPrompt({ context, taskCount, today, forToday }),
       [
         `Return only a single JSON object with a "tasks" array containing exactly ${String(taskCount)} task object${taskCount === 1 ? "" : "s"}.`,
         "Each task must include description, taskType, priority, and targetDate.",
@@ -219,8 +256,9 @@ async function generateMarketingTasksWithJsonFallback({
 export async function generateMarketingTasks({
   context,
   taskCount,
+  forToday = false,
 }: GenerateMarketingTasksProps): Promise<GeneratedMarketingTask[]> {
-  const today = getToday();
+  const today = forToday ? getLocalTodayString() : getToday();
   const latestTargetDate = getLatestTargetDate({ today });
   let generatedPlan;
 
@@ -229,12 +267,14 @@ export async function generateMarketingTasks({
       context,
       taskCount,
       today,
+      forToday,
     });
   } catch {
     generatedPlan = await generateMarketingTasksWithJsonFallback({
       context,
       taskCount,
       today,
+      forToday,
     });
   }
 
@@ -242,16 +282,19 @@ export async function generateMarketingTasks({
     context.marketingTasks.map(({ description }) => description.trim().toLowerCase()),
   );
   const generatedDescriptions = new Set<string>();
+  const todaySchedule = forToday ? getTodaySchedule() : null;
 
   return generatedPlan.tasks.map((task) => {
     const description = task.description.trim();
     const targetDate = new Date(`${task.targetDate}T09:00:00.000Z`);
+    const hasInvalidTargetDate = forToday
+      ? task.targetDate !== today
+      : task.targetDate <= today || targetDate > latestTargetDate;
 
     if (
       description.length === 0 ||
       Number.isNaN(targetDate.getTime()) ||
-      task.targetDate <= today ||
-      targetDate > latestTargetDate ||
+      hasInvalidTargetDate ||
       isDuplicateDescription({ description, descriptions: existingDescriptions }) ||
       isDuplicateDescription({ description, descriptions: generatedDescriptions })
     ) {
@@ -259,6 +302,17 @@ export async function generateMarketingTasks({
     }
 
     generatedDescriptions.add(description.toLowerCase());
+
+    if (todaySchedule != null) {
+      return {
+        description,
+        taskType: task.taskType,
+        priority: task.priority,
+        targetDate: todaySchedule.targetDate,
+        scheduledStart: todaySchedule.scheduledStart,
+        scheduledEnd: todaySchedule.scheduledEnd,
+      };
+    }
 
     return {
       description,
