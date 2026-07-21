@@ -217,6 +217,8 @@ export function GrowthAgentTaskDrawer({
                 {content.kind === "idea" ? (
                   <IdeaDrawerBody
                     idea={content.idea}
+                    todoDone={todoDone}
+                    onToggleTodo={onToggleTodo}
                     onApprove={() => {
                       onApproveIdea(content.idea.id);
                     }}
@@ -546,11 +548,15 @@ function ProjectDrawerBody({
 
 function IdeaDrawerBody({
   idea,
+  todoDone,
+  onToggleTodo,
   onApprove,
   onPostpone,
   onCancel,
 }: {
   idea: GrowthAgentIdea;
+  todoDone: Record<string, boolean>;
+  onToggleTodo: (projectId: string, todoId: string) => void;
   onApprove: () => void;
   onPostpone: () => void;
   onCancel: () => void;
@@ -560,7 +566,7 @@ function IdeaDrawerBody({
       <TaskPreviewSection delayMs={60}>
         <p className="mb-1 text-[12.5px] text-[rgba(23,20,15,0.45)]">{idea.meta}</p>
         <p className="mb-4 text-[17px] font-semibold text-[rgba(23,20,15,0.9)]">{idea.title}</p>
-        <p className="mb-[22px] line-clamp-2 text-[14.5px] leading-[1.6] text-[rgba(23,20,15,0.85)]">
+        <p className="mb-[22px] text-[14.5px] leading-[1.6] text-[rgba(23,20,15,0.85)]">
           {idea.description}
         </p>
       </TaskPreviewSection>
@@ -571,7 +577,48 @@ function IdeaDrawerBody({
         </TaskPreviewSection>
       ) : null}
 
-      <TaskPreviewSection delayMs={180}>
+      {idea.todos.length > 0 ? (
+        <TaskPreviewSection delayMs={180}>
+          <>
+            <DrawerSectionLabel>How to create it</DrawerSectionLabel>
+            <div className="mb-[22px] flex flex-col gap-2.5">
+              {idea.todos.map((todo) => {
+                const key = `${idea.id}:${todo.id}`;
+                const done = todoDone[key] ?? todo.done;
+
+                return (
+                  <div key={todo.id} className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onToggleTodo(idea.id, todo.id);
+                      }}
+                      className={clsx(
+                        "flex size-[18px] shrink-0 items-center justify-center rounded-[5px] border-[1.5px]",
+                        done
+                          ? "border-[#6a3fd1] bg-[#6a3fd1]"
+                          : "border-[rgba(23,20,15,0.25)] bg-transparent",
+                      )}
+                    >
+                      {done ? <Check className="size-[10px] stroke-[3] text-white" /> : null}
+                    </button>
+                    <span
+                      className={clsx(
+                        "flex-1 text-sm text-[rgba(23,20,15,0.8)]",
+                        done ? "line-through" : "no-underline",
+                      )}
+                    >
+                      {todo.text}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        </TaskPreviewSection>
+      ) : null}
+
+      <TaskPreviewSection delayMs={240}>
       <div className="flex flex-wrap items-center gap-2.5 border-t border-[rgba(23,20,15,0.08)] pt-[18px]">
         <SignalButton variant="primary" onClick={onApprove}>
           <Check className="size-[13px] stroke-[3]" />

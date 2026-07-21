@@ -15,6 +15,7 @@ enum MarketingTaskNetwork {
   REDDIT   @map("reddit")
   LINKEDIN @map("linkedin")
   YOUTUBE  @map("youtube")
+  META     @map("meta")
 }
 
 model Product {

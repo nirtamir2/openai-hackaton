@@ -31,10 +31,10 @@ export async function createGrowthFeedIdea({ productId, task }: Props) {
 
   const payload = {
     title: buildTaskPreviewTitle({ description: videoHook }),
-    meta: `New video idea · Priority ${String(task.priority)}`,
+    meta: `Meta video ad · Priority ${String(task.priority)}`,
     description: buildIdeaDescription({ description }),
     videoHook,
-    why: "Multi-week video project built around a competitor weakness your product can exploit.",
+    why: "Targets users frustrated with a competitor weakness your product solves.",
     todos: task.subtasks.map((subtask) => ({
       id: subtask.id,
       text: subtask.text,

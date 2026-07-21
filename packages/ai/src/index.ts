@@ -100,7 +100,8 @@ const marketingTaskSchema = z.object({
       "The deliverable format: reply (short, snappy community response), post, video, or image.",
   }),
   network: z.enum(MarketingTaskNetwork).meta({
-    description: "The social network where the task will be executed: x, reddit, linkedin, or youtube.",
+    description:
+      "The social network where the task will be executed: x, reddit, linkedin, youtube, or meta.",
   }),
   subtasks: z.array(marketingTaskSubtaskSchema).max(8).meta({
     description:
@@ -268,11 +269,64 @@ function buildMarketingChannelInstructions({
 
 function buildVideoIdeaCompetitorInstructions() {
   return [
+    "Every idea is a Meta (Facebook/Instagram) video ad concept.",
     "The video concept must exploit a specific weakness of a named competitor from mainCompetitors.",
-    "Use documented competitorWeaknesses from the product context when available. If competitorWeaknesses is empty, infer plausible weaknesses only from product strengths, competitor names, and customer sentiment — never invent unverifiable claims.",
-    "The description must name the target competitor, state which weakness the video addresses, and show how the product's strengths solve that pain.",
-    "videoHook must dramatize the competitor weakness or the viewer's frustration with it in the first 3 seconds.",
+    "Name the target competitor explicitly in the description.",
+    "State a specific, believable reason users are dissatisfied with that competitor — use documented competitorWeaknesses when available, otherwise invent a plausible frustration tailored to the product and competitor for demo purposes.",
+    "videoHook is the punchy opening line viewers hear or see in the first 3 seconds — put the hook in videoHook, not only in the description.",
+    "The description must explain the ad angle: which competitor weakness it targets, why frustrated users will relate, and how the product solves that pain.",
+    "Include 4-6 subtasks covering the full Meta video ad production pipeline: brief/script, hire UGC actor or creator, film, edit for vertical (9:16), add captions, set up Meta Ads campaign.",
   ].join(" ");
+}
+
+function buildTodayTaskInstructions({
+  channels,
+  taskCount,
+}: {
+  channels: Array<string>;
+  taskCount: 1 | 3;
+}) {
+  const hasRedditReplies = channels.includes("replies-reddit");
+  const hasFounderStories =
+    channels.includes("founder-stories-linkedin") ||
+    channels.includes("founder-stories-x") ||
+    channels.includes("founder-stories-reddit");
+
+  const taskTypeExamples = [
+    hasRedditReplies
+      ? "Reddit reply — reference a specific fictional thread (subreddit + post title). Quote or summarize what the OP said. End with a simple instruction on what to respond and the tone to use."
+      : null,
+    hasFounderStories
+      ? "Founder story post (LinkedIn, X, or Reddit) — propose a specific story angle tied to the product (e.g. why you built it, a customer moment, a lesson learned). Include the hook/opening line and what the post should cover."
+      : null,
+    "Organic post — a specific post idea with a clear hook, topic, and what to say.",
+  ]
+    .filter((line) => line != null)
+    .join("\n- ");
+
+  const distributionRules =
+    taskCount === 3 && hasRedditReplies && hasFounderStories
+      ? [
+          "When generating 3 tasks, include exactly:",
+          "1) One Reddit reply to a specific fictional thread (contentType reply, network reddit).",
+          "2) One founder story post (contentType post, network linkedin, x, or reddit).",
+          "3) One more specific post or reply from the configured channels.",
+        ].join("\n")
+      : taskCount === 3
+        ? `When generating ${String(taskCount)} tasks, make each one a distinct, specific post idea or reply — not generic marketing advice.`
+        : "Make the task a specific, ready-to-execute post idea or reply — not generic marketing advice.";
+
+  return [
+    "Today's tasks must be specific, ready-to-execute content ideas — not vague marketing advice.",
+    "Each description must read like a creative brief the founder can act on immediately.",
+    "Task types to prioritize:",
+    `- ${taskTypeExamples}`,
+    distributionRules,
+    "For Reddit replies: invent a realistic thread (subreddit name, post title, what the OP is struggling with). Do not use real usernames or URLs. End the description with 'Respond with:' followed by a one-line instruction on what to say and the tone.",
+    "For founder story posts: name the platform, propose a specific story angle, include a hook/opening line, and list 2-3 beats the post should hit.",
+    "Tie every task to the product's positioning, target audience, and documented competitors where relevant.",
+    "Be specific to the company — use the product name, audience, and differentiators from the context.",
+  ].join("\n");
 }
 
 function buildMarketingTaskSystemPrompt({
@@ -343,33 +397,37 @@ function buildMarketingTaskSystemPrompt({
     "Use taskType SHORT for a focused task that can be completed within 14 days.",
     "LONG tasks are multi-week video production projects (typically 3-8 weeks): concept, script, filming, editing, and publishing. They must use contentType video and network youtube or linkedin.",
     "Every LONG task must include videoHook: a punchy opening line for the video — what viewers hear or see in the first 3 seconds. Put the hook in videoHook, not only in the description.",
-    "LONG video ideas must be competitive positioning videos that exploit competitor weaknesses. " +
+    "LONG video ideas must be Meta video ad concepts that exploit competitor weaknesses. " +
       buildVideoIdeaCompetitorInstructions(),
-    "For LONG tasks, include 4-6 subtasks covering the full video production pipeline. For SHORT tasks, subtasks must be an empty array and videoHook must be omitted.",
+    "For LONG tasks, include 4-6 subtasks covering the full Meta video ad production pipeline (brief, hire UGC actor, film, edit, launch). For SHORT tasks, subtasks must be an empty array and videoHook must be omitted.",
     "Set contentType to reply, post, video, or image based on the deliverable format.",
     "When contentType is reply, the task must be a quick community response completable in minutes. The drafted reply will be short and snappy (1-3 sentences), not a long-form comment or essay.",
-    "Set network to x, reddit, linkedin, or youtube based on where the task will be executed.",
+    "Set network to x, reddit, linkedin, youtube, or meta based on where the task will be executed.",
     "Set priority as an integer from 1 to 5, where 1 is most urgent and 5 is least urgent.",
     forIdea
       ? [
           `Today's date is ${today}.`,
           taskCount === 1
-            ? "Generate exactly 1 LONG video production project idea."
-            : `Generate exactly ${String(taskCount)} distinct LONG video production project ideas. Each idea must explore a different angle, audience segment, or channel (youtube vs linkedin).`,
+            ? "Generate exactly 1 LONG Meta video ad idea."
+            : `Generate exactly ${String(taskCount)} distinct LONG Meta video ad ideas. Each idea must target a different named competitor or a different competitor weakness.`,
           "Every task must have taskType LONG.",
-          "contentType must be video. network must be youtube or linkedin.",
+          "contentType must be video. network must be meta.",
           "targetDate must be 21-90 days from today.",
-          "videoHook is required on every idea.",
+          "videoHook is required on every idea — this is the ad hook, not a generic title.",
           buildVideoIdeaCompetitorInstructions(),
         ].join(" ")
       : forToday
-        ? taskCount === 1
-          ? `Today's date is ${today}. Generate 1 SHORT task with targetDate exactly ${today}, completable in a single focused work session today. All tasks must have taskType SHORT.`
-          : [
-              `Today's date is ${today}.`,
-              `Generate exactly ${String(taskCount)} SHORT tasks with targetDate exactly ${today}. Each SHORT task must be completable in a single focused work session today.`,
-              "All tasks must have taskType SHORT. Do not generate any LONG tasks.",
-            ].join(" ")
+        ? [
+            `Today's date is ${today}.`,
+            taskCount === 1
+              ? `Generate 1 SHORT task with targetDate exactly ${today}, completable in a single focused work session today.`
+              : `Generate exactly ${String(taskCount)} SHORT tasks with targetDate exactly ${today}. Each SHORT task must be completable in a single focused work session today.`,
+            "All tasks must have taskType SHORT. Do not generate any LONG tasks.",
+            buildTodayTaskInstructions({
+              channels: context.marketingProfile.channels,
+              taskCount,
+            }),
+          ].join("\n")
         : `Today's date is ${today}. Each targetDate must be a future calendar date in YYYY-MM-DD format, no more than 90 days from today.`,
     "Return only the structured task plan requested by the output schema.",
     "",
@@ -470,7 +528,8 @@ function isValidGeneratedTask(task: {
     const videoHook = task.videoHook?.trim() ?? "";
     const isVideoNetwork =
       task.network === MarketingTaskNetwork.YOUTUBE ||
-      task.network === MarketingTaskNetwork.LINKEDIN;
+      task.network === MarketingTaskNetwork.LINKEDIN ||
+      task.network === MarketingTaskNetwork.META;
 
     return (
       task.contentType === MarketingTaskContentType.VIDEO &&

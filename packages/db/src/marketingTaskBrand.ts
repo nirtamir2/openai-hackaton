@@ -8,6 +8,7 @@ const networkLabels: Record<MarketingTaskNetwork, string> = {
   [MarketingTaskNetwork.REDDIT]: "REDDIT",
   [MarketingTaskNetwork.LINKEDIN]: "LINKEDIN",
   [MarketingTaskNetwork.YOUTUBE]: "YOUTUBE",
+  [MarketingTaskNetwork.META]: "META",
 };
 
 const contentTypeLabels: Record<MarketingTaskContentType, string> = {
@@ -22,6 +23,7 @@ const networkColors: Record<MarketingTaskNetwork, string> = {
   [MarketingTaskNetwork.REDDIT]: "#c9440e",
   [MarketingTaskNetwork.LINKEDIN]: "#0a66c2",
   [MarketingTaskNetwork.YOUTUBE]: "#ff0000",
+  [MarketingTaskNetwork.META]: "#1877f2",
 };
 
 const networkColorBackgrounds: Record<MarketingTaskNetwork, string> = {
@@ -29,6 +31,7 @@ const networkColorBackgrounds: Record<MarketingTaskNetwork, string> = {
   [MarketingTaskNetwork.REDDIT]: "rgba(255,90,31,0.1)",
   [MarketingTaskNetwork.LINKEDIN]: "rgba(10,102,194,0.1)",
   [MarketingTaskNetwork.YOUTUBE]: "rgba(255,0,0,0.1)",
+  [MarketingTaskNetwork.META]: "rgba(24,119,242,0.1)",
 };
 
 export interface MarketingTaskSubtask {
