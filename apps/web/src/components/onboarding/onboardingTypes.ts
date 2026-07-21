@@ -9,6 +9,12 @@ export interface OnboardingWebsiteData {
   searchKeywordsSeo: string;
 }
 
+export interface SelectableOption {
+  id: string;
+  title: string;
+  subtitle: string;
+}
+
 export interface OnboardingIntegrations {
   stripe: boolean;
   mixpanel: boolean;
@@ -17,8 +23,10 @@ export interface OnboardingIntegrations {
 
 export interface OnboardingState {
   website: OnboardingWebsiteData;
+  targetMarketOptions: Array<SelectableOption>;
   targetMarkets: Array<string>;
-  personality: Array<string>;
+  personalityOptions: Array<SelectableOption>;
+  personality: string | null;
   channels: Array<string>;
   capacity: string | null;
   integrations: OnboardingIntegrations;
@@ -30,5 +38,4 @@ export type OnboardingStepId =
   | "personality"
   | "channels"
   | "capacity"
-  | "integration"
-  | "report";
+  | "integration";

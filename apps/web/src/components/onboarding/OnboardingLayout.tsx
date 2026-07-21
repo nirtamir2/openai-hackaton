@@ -3,11 +3,12 @@ import { OnboardingStepper } from "@/components/onboarding/OnboardingStepper";
 import type { OnboardingStepId } from "@/components/onboarding/onboardingTypes";
 
 interface Props {
-  currentStepId: OnboardingStepId;
+  currentStepId: OnboardingStepId | null;
+  hideStepper?: boolean;
   children: ReactNode;
 }
 
-export function OnboardingLayout({ currentStepId, children }: Props) {
+export function OnboardingLayout({ currentStepId, hideStepper = false, children }: Props) {
   return (
     <div className="signal-home min-h-screen bg-[#f7f5f1] font-sans text-[#17140f]">
       <div className="mx-auto flex min-h-screen w-full max-w-[800px] flex-col gap-8 px-5 py-10 sm:px-8 sm:py-12">
@@ -19,7 +20,9 @@ export function OnboardingLayout({ currentStepId, children }: Props) {
             <span className="text-xl font-semibold tracking-[-0.3px]">Signal</span>
           </div>
 
-          <OnboardingStepper currentStepId={currentStepId} />
+          {hideStepper || currentStepId == null ? null : (
+            <OnboardingStepper currentStepId={currentStepId} />
+          )}
         </header>
 
         <main className="flex flex-1 flex-col">{children}</main>

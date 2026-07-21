@@ -1,4 +1,5 @@
 import prisma, { GrowthFeedEntryKind, GrowthIdeaStatus } from "@app-template/db";
+import { ensureMockProduct } from "@app-template/db/ensureMockProduct";
 import { ORPCError } from "@orpc/server";
 import { z } from "zod";
 import { mapGrowthFeedEntries } from "../feed/mapGrowthFeedEntries";
@@ -58,7 +59,14 @@ export const feedRouter = {
     });
 
     if (product == null) {
-      throw new ORPCError("NOT_FOUND");
+      const wasEnsured = await ensureMockProduct({
+        productId: input.productId,
+        prisma,
+      });
+
+      if (!wasEnsured) {
+        throw new ORPCError("NOT_FOUND");
+      }
     }
 
     const entries = await prisma.productGrowthFeedEntry.findMany({

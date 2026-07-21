@@ -15,7 +15,7 @@ export function CapacityStep({ selectedId, onChange, onBack, onContinue }: Props
     <OnboardingCard>
       <OnboardingStepHeader
         stepNumber={5}
-        totalSteps={7}
+        totalSteps={6}
         title="How much time can you invest?"
         subtitle="This helps us calibrate how aggressively Signal runs your campaigns."
       />

@@ -12,5 +12,6 @@ export const onboardingSteps: Array<OnboardingStepDefinition> = [
   { id: "channels", label: "Channels" },
   { id: "capacity", label: "Capacity" },
   { id: "integration", label: "Integration" },
-  { id: "report", label: "Report" },
 ];
+
+export const onboardingStepCount = onboardingSteps.length;

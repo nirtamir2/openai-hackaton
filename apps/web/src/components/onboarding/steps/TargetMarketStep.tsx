@@ -1,16 +1,17 @@
 import { OnboardingCard, OnboardingFooter } from "@/components/onboarding/OnboardingFooter";
 import { OnboardingStepHeader } from "@/components/onboarding/OnboardingStepHeader";
-import { targetMarketOptions } from "@/components/onboarding/onboardingMockData";
-import { SelectableChip } from "@/components/onboarding/SelectableChip";
+import type { SelectableOption } from "@/components/onboarding/onboardingTypes";
+import { SelectableOptionRow } from "@/components/onboarding/SelectableOptionRow";
 
 interface Props {
+  options: Array<SelectableOption>;
   selectedIds: Array<string>;
   onChange: (selectedIds: Array<string>) => void;
   onBack: () => void;
   onContinue: () => void;
 }
 
-export function TargetMarketStep({ selectedIds, onChange, onBack, onContinue }: Props) {
+export function TargetMarketStep({ options, selectedIds, onChange, onBack, onContinue }: Props) {
   function toggleOption(id: string) {
     if (selectedIds.includes(id)) {
       onChange(selectedIds.filter((item) => item !== id));
@@ -24,15 +25,15 @@ export function TargetMarketStep({ selectedIds, onChange, onBack, onContinue }: 
     <OnboardingCard>
       <OnboardingStepHeader
         stepNumber={2}
-        totalSteps={7}
-        title="Who's your target market?"
-        subtitle="Select all that apply — I generated these from your website."
+        totalSteps={6}
+        title="Which target market do you want to focus on?"
+        subtitle="Select the audiences you want to reach."
         showAiBadge
       />
 
-      <div className="flex flex-wrap gap-2.5">
-        {targetMarketOptions.map((option) => (
-          <SelectableChip
+      <div className="flex flex-col gap-2.5">
+        {options.map((option) => (
+          <SelectableOptionRow
             key={option.id}
             option={option}
             isSelected={selectedIds.includes(option.id)}

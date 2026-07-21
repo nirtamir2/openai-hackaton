@@ -2,6 +2,7 @@ import { MOCK_PRODUCT_ID } from "@app-template/db/mockProductId";
 import { useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { getCompanyNameFromUrl } from "@/components/growth-agent/growthAgentTypes";
+import { DailyPlanGenerationProgress } from "@/components/onboarding/DailyPlanGenerationProgress";
 import { OnboardingLayout } from "@/components/onboarding/OnboardingLayout";
 import { createInitialOnboardingState } from "@/components/onboarding/onboardingMockData";
 import { onboardingSteps } from "@/components/onboarding/onboardingSteps";
@@ -11,7 +12,6 @@ import { CapacityStep } from "@/components/onboarding/steps/CapacityStep";
 import { ChannelsStep } from "@/components/onboarding/steps/ChannelsStep";
 import { IntegrationStep } from "@/components/onboarding/steps/IntegrationStep";
 import { PersonalityStep } from "@/components/onboarding/steps/PersonalityStep";
-import { ReportStep } from "@/components/onboarding/steps/ReportStep";
 import { TargetMarketStep } from "@/components/onboarding/steps/TargetMarketStep";
 import { WebsiteInputStep } from "@/components/onboarding/steps/WebsiteInputStep";
 
@@ -19,6 +19,7 @@ export function OnboardingWizard() {
   const navigate = useNavigate();
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [state, setState] = useState<OnboardingState>(createInitialOnboardingState);
+  const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
 
   const currentStepId = onboardingSteps[currentStepIndex].id;
 
@@ -40,7 +41,17 @@ export function OnboardingWizard() {
     setCurrentStepIndex((index) => Math.max(index - 1, 0));
   }
 
+  function startPlanGeneration() {
+    setIsGeneratingPlan(true);
+  }
+
   function renderStep() {
+    if (isGeneratingPlan) {
+      return (
+        <DailyPlanGenerationProgress state={state} onComplete={handleOnboardingComplete} />
+      );
+    }
+
     switch (currentStepId) {
       case "website": {
         return (
@@ -49,6 +60,15 @@ export function OnboardingWizard() {
             onChange={(website) => {
               setState((previous) => ({ ...previous, website }));
             }}
+            onAnalysisComplete={(analysis) => {
+              setState((previous) => ({
+                ...previous,
+                targetMarketOptions: analysis.targetMarketOptions,
+                targetMarkets: [],
+                personalityOptions: analysis.personalityOptions,
+                personality: null,
+              }));
+            }}
             onContinue={goToNextStep}
           />
         );
@@ -56,6 +76,7 @@ export function OnboardingWizard() {
       case "target-market": {
         return (
           <TargetMarketStep
+            options={state.targetMarketOptions}
             selectedIds={state.targetMarkets}
             onChange={(targetMarkets) => {
               setState((previous) => ({ ...previous, targetMarkets }));
@@ -68,7 +89,8 @@ export function OnboardingWizard() {
       case "personality": {
         return (
           <PersonalityStep
-            selectedIds={state.personality}
+            options={state.personalityOptions}
+            selectedId={state.personality}
             onChange={(personality) => {
               setState((previous) => ({ ...previous, personality }));
             }}
@@ -109,16 +131,7 @@ export function OnboardingWizard() {
               setState((previous) => ({ ...previous, integrations }));
             }}
             onBack={goToPreviousStep}
-            onContinue={goToNextStep}
-          />
-        );
-      }
-      case "report": {
-        return (
-          <ReportStep
-            state={state}
-            onBack={goToPreviousStep}
-            onComplete={handleOnboardingComplete}
+            onContinue={startPlanGeneration}
           />
         );
       }
@@ -128,5 +141,12 @@ export function OnboardingWizard() {
     }
   }
 
-  return <OnboardingLayout currentStepId={currentStepId}>{renderStep()}</OnboardingLayout>;
+  return (
+    <OnboardingLayout
+      currentStepId={isGeneratingPlan ? null : currentStepId}
+      hideStepper={isGeneratingPlan}
+    >
+      {renderStep()}
+    </OnboardingLayout>
+  );
 }

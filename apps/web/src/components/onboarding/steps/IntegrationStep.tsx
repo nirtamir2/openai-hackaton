@@ -45,7 +45,7 @@ export function IntegrationStep({ integrations, onChange, onBack, onContinue }: 
     <OnboardingCard>
       <OnboardingStepHeader
         stepNumber={6}
-        totalSteps={7}
+        totalSteps={6}
         title="Connect your tools"
         subtitle="Link your accounts so Signal can track revenue and optimize campaigns."
       />
@@ -96,7 +96,7 @@ export function IntegrationStep({ integrations, onChange, onBack, onContinue }: 
         })}
       </div>
 
-      <OnboardingFooter onBack={onBack} onContinue={onContinue} continueLabel="View report" />
+      <OnboardingFooter onBack={onBack} onContinue={onContinue} continueLabel="Generate today's plan" />
     </OnboardingCard>
   );
 }

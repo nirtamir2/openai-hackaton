@@ -10,6 +10,7 @@ const prisma = new PrismaClient({ adapter });
 export default prisma;
 
 export { MOCK_PRODUCT_ID } from "./mockProductId";
+export { ensureMockProduct } from "./ensureMockProduct";
 
 export type * from "../prisma/generated/enums";
 export type * from "../prisma/generated/models";
